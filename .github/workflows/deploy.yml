@@ -20,11 +20,9 @@ jobs:
             mkdir -p ~/backups
             cd ~/backend-service-central
             git pull
-            cat > .env << 'ENDOFENV'
-            ${{ secrets.ENV_FILE }}
-            ENDOFENV
+            printf 'PORT=3000\nHOST=0.0.0.0\nNODE_ENV=production\nDB_HOST=db\nDB_PORT=5432\nDB_USER=${{ secrets.DB_USER }}\nDB_PASSWORD=${{ secrets.DB_PASSWORD }}\nDB_NAME=${{ secrets.DB_NAME }}\nJWT_SECRET=${{ secrets.JWT_SECRET }}\n' > .env
             sudo ufw allow 3000/tcp
-            sudo docker-compose exec -T db pg_dump -U postgres standup_db > ~/backups/backup_$(date +%Y%m%d_%H%M%S).sql || true
+            sudo docker-compose exec -T db pg_dump -U ${{ secrets.DB_USER }} ${{ secrets.DB_NAME }} > ~/backups/backup_$(date +%Y%m%d_%H%M%S).sql || true
             sudo docker-compose down
             sudo docker-compose up -d --build
             sleep 10
