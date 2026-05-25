@@ -19,5 +19,9 @@ jobs:
           script: |
             cd ~/backend-service-central
             git pull
+            echo "$ENV_FILE" > .env
             sudo docker-compose down
             sudo docker-compose up -d --build
+          envs: ENV_FILE
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
