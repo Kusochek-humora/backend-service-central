@@ -7,14 +7,18 @@
     "dev": "node --watch src/server.js"
   },
   "dependencies": {
+    "@fastify/jwt": "^10.1.0",
     "@fastify/swagger": "^9.7.0",
     "@fastify/swagger-ui": "^5.2.6",
     "@prisma/client": "^7.8.0",
+    "dotenv": "^17.4.2",
     "fastify": "^4.29.1",
+    "pg": "^8.21.0",
     "prisma": "^7.8.0"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",
+    "@types/pg": "^8.20.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
