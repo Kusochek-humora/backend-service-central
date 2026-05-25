@@ -8,6 +8,7 @@ const start = async () => {
   try {
     await app.listen({ port: 3000, host: "0.0.0.0" });
     app.log.info("server dolboeb");
+    return { message: "yan pedik" };
   } catch (error) {
     app.log.error(error);
     process.exit(1);
