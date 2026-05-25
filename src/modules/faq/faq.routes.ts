@@ -114,6 +114,7 @@ export async function faqRoutes(app: FastifyInstance) {
       params: { type: "object", properties: { id: { type: "number" } } },
       response: {
         200: { type: "object", properties: { message: { type: "string" } } },
+        401: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
