@@ -14,7 +14,7 @@ const app = fastify({ logger: true });
 const start = async () => {
   try {
     await app.register(cors, {
-      origin: true,
+      origin: ["https://test-standup.ru", "http://localhost:5173"],
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-type", "Authorization"],
     });
