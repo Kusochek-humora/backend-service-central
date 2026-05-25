@@ -17,10 +17,12 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            mkdir -p ~/backups
             cd ~/backend-service-central
             git pull
-            echo "$ENV_FILE" > .env
+            printf '%s\n' "$ENV_FILE" > .env
             sudo ufw allow 3000/tcp
+            sudo docker-compose exec -T db pg_dump -U postgres standup_db > ~/backups/backup_$(date +%Y%m%d_%H%M%S).sql || true
             sudo docker-compose down
             sudo docker-compose up -d --build
             sleep 10
