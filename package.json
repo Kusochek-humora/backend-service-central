@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc"
+    "build": "tsx"
   },
   "dependencies": {
     "@fastify/jwt": "^10.1.0",
