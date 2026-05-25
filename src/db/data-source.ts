@@ -11,7 +11,11 @@ export const AppDataSource = new DataSource({
   database: env.db.name,
   synchronize: false,
   logging: true,
-  entities: ["src/db/entities/**/*.ts"],
-  migrations: ["src/db/migrations/**/*.ts"],
+  entities: env.nodeEnv === "production"
+    ? ["dist/db/entities/**/*.js"]
+    : ["src/db/entities/**/*.ts"],
+  migrations: env.nodeEnv === "production"
+    ? ["dist/db/migrations/**/*.js"]
+    : ["src/db/migrations/**/*.ts"],
   subscribers:[]
 });
