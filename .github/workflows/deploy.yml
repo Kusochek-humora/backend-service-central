@@ -20,7 +20,9 @@ jobs:
             mkdir -p ~/backups
             cd ~/backend-service-central
             git pull
-            printf '%s\n' "$ENV_FILE" > .env
+            cat > .env << 'ENDOFENV'
+            ${{ secrets.ENV_FILE }}
+            ENDOFENV
             sudo ufw allow 3000/tcp
             sudo docker-compose exec -T db pg_dump -U postgres standup_db > ~/backups/backup_$(date +%Y%m%d_%H%M%S).sql || true
             sudo docker-compose down
@@ -29,6 +31,3 @@ jobs:
             sudo docker-compose exec -T app npm run migration:run:prod
             sudo docker-compose exec -T app node dist/db/seeds/create-chief-editor.js
             sudo docker-compose logs app
-          envs: ENV_FILE
-        env:
-          ENV_FILE: ${{ secrets.ENV_FILE }}
