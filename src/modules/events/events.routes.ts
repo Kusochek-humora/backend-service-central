@@ -99,6 +99,8 @@ export async function eventsRoutes(app: FastifyInstance) {
           period: { type: "string", enum: ["today", "week"], description: "Сегодня или вся неделя" },
           hall: { type: "string", enum: Object.values(Hall), description: "Фильтр по залу" },
           language: { type: "string", enum: Object.values(Language), description: "Фильтр по языку: ru | kz | en" },
+          isOnMainPage: { type: "boolean", description: "Только ивенты на главной" },
+          categoryId: { type: "number", description: "Фильтр по категории" },
         },
       },
       response: {
@@ -106,31 +108,39 @@ export async function eventsRoutes(app: FastifyInstance) {
       },
     },
   }, async (request) => {
-    const { date, period, hall, language } = request.query as {
+    const { date, period, hall, language, isOnMainPage, categoryId } = request.query as {
       date?: string;
       period?: "today" | "week";
       hall?: Hall;
       language?: Language;
+      isOnMainPage?: boolean;
+      categoryId?: number;
     };
 
-    const today = new Date().toISOString().split("T")[0];
-    const where: FindOptionsWhere<Event> = {};
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    const currentTime = now.toTimeString().slice(0, 8);
 
-    if (hall) where.hall = hall;
-    if (language) where.language = language;
+    const qb = eventRepo.createQueryBuilder("e").leftJoinAndSelect("e.category", "category");
+
+    if (hall) qb.andWhere("e.hall = :hall", { hall });
+    if (language) qb.andWhere("e.language = :language", { language });
+    if (isOnMainPage !== undefined) qb.andWhere("e.isOnMainPage = :isOnMainPage", { isOnMainPage });
+    if (categoryId) qb.andWhere("e.categoryId = :categoryId", { categoryId });
 
     if (date) {
-      where.date = date;
+      qb.andWhere("e.date = :date", { date });
     } else if (period === "today") {
-      where.date = today;
+      qb.andWhere("e.date = :today", { today });
     } else if (period === "week") {
       const { end } = getWeekRange();
-      where.date = Between(today, end);
+      qb.andWhere("(e.date > :today OR (e.date = :today AND e.time >= :currentTime))", { today, currentTime });
+      qb.andWhere("e.date <= :end", { end });
     } else {
-      where.date = Between(today, "2999-12-31");
+      qb.andWhere("(e.date > :today OR (e.date = :today AND e.time >= :currentTime))", { today, currentTime });
     }
 
-    return eventRepo.find({ where, order: { date: "ASC", time: "ASC" } });
+    return qb.orderBy("e.date", "ASC").addOrderBy("e.time", "ASC").getMany();
   });
 
   app.get("/events/:id", {
@@ -200,14 +210,18 @@ export async function eventsRoutes(app: FastifyInstance) {
     },
   }, async (request) => {
     const { page = 1, limit = 20 } = request.query as { page?: number; limit?: number };
-    const today = new Date().toISOString().split("T")[0];
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    const currentTime = now.toTimeString().slice(0, 8);
 
-    const [events, total] = await eventRepo.findAndCount({
-      where: { date: Between("2000-01-01", today) },
-      order: { date: "DESC", time: "DESC" },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const [events, total] = await eventRepo.createQueryBuilder("e")
+      .leftJoinAndSelect("e.category", "category")
+      .where("(e.date < :today OR (e.date = :today AND e.time < :currentTime))", { today, currentTime })
+      .orderBy("e.date", "DESC")
+      .addOrderBy("e.time", "DESC")
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
 
     const data = events.map(({ photo: _p, link: _l, isDonation: _d, isOnMainPage: _m, categoryId: _cid, createdAt: _ca, updatedAt: _ua, ...rest }) => rest);
     return { data, total, page, limit, pages: Math.ceil(total / limit) };

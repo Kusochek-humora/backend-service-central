@@ -52,6 +52,7 @@ export async function categoriesRoutes(app: FastifyInstance) {
           },
         },
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
       },
     },
     onRequest: [
@@ -79,6 +80,7 @@ export async function categoriesRoutes(app: FastifyInstance) {
       response: {
         200: { type: "object", properties: { message: { type: "string" } } },
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },

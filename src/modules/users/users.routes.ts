@@ -16,6 +16,35 @@ export async function usersRoutes(app: FastifyInstance) {
     }
   });
 
+  app.get("/me", {
+    schema: {
+      tags: ["Users"],
+      summary: "Получить свои данные",
+      ...bearerAuth,
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            id: { type: "number" },
+            email: { type: "string" },
+            username: { type: "string" },
+            role: { type: "string" },
+            permissions: { type: "array", items: { type: "string" } },
+          },
+        },
+        401: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+  }, async (request) => {
+    const jwtUser = request.user as JwtUser;
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({
+      where: { id: jwtUser.id },
+      select: { id: true, email: true, username: true, role: true, permissions: true },
+    });
+    return user;
+  });
+
   app.get("/users", {
     schema: {
       tags: ["Users"],
@@ -36,6 +65,7 @@ export async function usersRoutes(app: FastifyInstance) {
             },
           },
         },
+        401: { type: "object", properties: { message: { type: "string" } } },
         403: { type: "object", properties: { message: { type: "string" } } },
       },
     },
@@ -82,6 +112,7 @@ export async function usersRoutes(app: FastifyInstance) {
             permissions: { type: "array", items: { type: "string" } },
           },
         },
+        401: { type: "object", properties: { message: { type: "string" } } },
         403: { type: "object", properties: { message: { type: "string" } } },
       },
     },
@@ -139,6 +170,7 @@ export async function usersRoutes(app: FastifyInstance) {
             permissions: { type: "array", items: { type: "string" } },
           },
         },
+        401: { type: "object", properties: { message: { type: "string" } } },
         403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
@@ -162,6 +194,48 @@ export async function usersRoutes(app: FastifyInstance) {
     return { id: target.id, email: target.email, username: target.username, role: target.role, permissions: target.permissions };
   });
 
+  app.patch("/users/:id/password", {
+    schema: {
+      tags: ["Users"],
+      summary: "Сменить пароль (chief_editor — любому, editor — только себе)",
+      ...bearerAuth,
+      params: {
+        type: "object",
+        properties: { id: { type: "number" } },
+      },
+      body: {
+        type: "object",
+        required: ["password"],
+        properties: {
+          password: { type: "string", description: "Новый пароль" },
+        },
+      },
+      response: {
+        200: { type: "object", properties: { message: { type: "string" } } },
+        401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+  }, async (request, reply) => {
+    const jwtUser = request.user as JwtUser;
+    const { id } = request.params as { id: string };
+    const targetId = Number(id);
+
+    if (jwtUser.role !== UserRole.CHIEF_EDITOR && jwtUser.id !== targetId) {
+      return reply.status(403).send({ message: "Forbidden" });
+    }
+
+    const { password } = request.body as { password: string };
+    const userRepo = AppDataSource.getRepository(User);
+    const target = await userRepo.findOneBy({ id: targetId });
+    if (!target) return reply.status(404).send({ message: "User not found" });
+
+    target.password = await bcrypt.hash(password, 10);
+    await userRepo.save(target);
+    return { message: "Password updated" };
+  });
+
   app.delete("/users/:id", {
     schema: {
       tags: ["Users"],
@@ -180,6 +254,7 @@ export async function usersRoutes(app: FastifyInstance) {
             message: { type: "string" },
           },
         },
+        401: { type: "object", properties: { message: { type: "string" } } },
         403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
