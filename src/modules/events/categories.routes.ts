@@ -9,10 +9,23 @@ const bearerAuth = { security: [{ bearerAuth: [] }] };
 export async function categoriesRoutes(app: FastifyInstance) {
   const categoryRepo = AppDataSource.getRepository(Category);
 
+  const categorySchema = {
+    type: "object",
+    properties: {
+      id: { type: "number" },
+      name: { type: "string" },
+      createdAt: { type: "string" },
+      updatedAt: { type: "string" },
+    },
+  };
+
   app.get("/categories", {
     schema: {
       tags: ["Categories"],
       summary: "Получить все категории (публичный)",
+      response: {
+        200: { type: "array", items: categorySchema },
+      },
     },
   }, async () => {
     return categoryRepo.find({ order: { name: "ASC" } });

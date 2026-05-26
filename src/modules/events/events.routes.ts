@@ -13,20 +13,20 @@ const eventSchema = {
     id: { type: "number" },
     title: { type: "string" },
     photo: { type: "string" },
-    hall: { type: "string" },
+    hall: { type: "string", enum: ["big", "small"] },
     link: { type: "string" },
-    date: { type: "string" },
-    time: { type: "string" },
+    date: { type: "string", description: "YYYY-MM-DD" },
+    time: { type: "string", description: "HH:MM" },
     isDonation: { type: "boolean" },
     isOnMainPage: { type: "boolean" },
-    notion: { type: "string" },
-    description: { type: "string" },
-    comedians: { type: "string" },
-    subtext: { type: "string" },
-    categoryId: { type: "number" },
+    notion: { type: ["string", "null"] },
+    description: { type: ["string", "null"] },
+    comedians: { type: ["string", "null"] },
+    subtext: { type: ["string", "null"] },
+    categoryId: { type: ["number", "null"] },
     category: {
-      type: "object",
       nullable: true,
+      type: "object",
       properties: {
         id: { type: "number" },
         name: { type: "string" },
@@ -37,24 +37,31 @@ const eventSchema = {
   },
 };
 
+const eventProperties = {
+  title: { type: "string" },
+  photo: { type: "string", description: "URL из /admin/upload/events" },
+  hall: { type: "string", enum: Object.values(Hall), description: "big | small" },
+  link: { type: "string", description: "Ссылка на билеты" },
+  date: { type: "string", description: "YYYY-MM-DD" },
+  time: { type: "string", description: "HH:MM" },
+  isDonation: { type: "boolean", description: "Мероприятие по донейшену" },
+  isOnMainPage: { type: "boolean", description: "Показывать на главной" },
+  notion: { type: "string", description: "Краткое описание (опционально)" },
+  description: { type: "string", description: "Полное описание (опционально)" },
+  comedians: { type: "string", description: "Участники (опционально)" },
+  subtext: { type: "string", description: "Подпись (опционально)" },
+  categoryId: { type: "number", description: "ID категории (опционально)" },
+};
+
 const bodySchema = {
   type: "object",
   required: ["title", "photo", "hall", "link", "date", "time"],
-  properties: {
-    title: { type: "string" },
-    photo: { type: "string" },
-    hall: { type: "string", enum: Object.values(Hall) },
-    link: { type: "string" },
-    date: { type: "string", description: "YYYY-MM-DD" },
-    time: { type: "string", description: "HH:MM" },
-    isDonation: { type: "boolean" },
-    isOnMainPage: { type: "boolean" },
-    notion: { type: "string" },
-    description: { type: "string" },
-    comedians: { type: "string" },
-    subtext: { type: "string" },
-    categoryId: { type: "number" },
-  },
+  properties: eventProperties,
+};
+
+const updateBodySchema = {
+  type: "object",
+  properties: eventProperties,
 };
 
 function getTodayRange(): { start: string; end: string } {
@@ -237,7 +244,7 @@ export async function eventsRoutes(app: FastifyInstance) {
       summary: "Обновить событие",
       ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
-      body: bodySchema,
+      body: updateBodySchema,
       response: {
         200: eventSchema,
         401: { type: "object", properties: { message: { type: "string" } } },

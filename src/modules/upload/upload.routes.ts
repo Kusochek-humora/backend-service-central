@@ -23,18 +23,20 @@ export async function uploadRoutes(app: FastifyInstance) {
     schema: {
       tags: ["Upload"],
       summary: "Загрузить изображение (конвертируется в WebP)",
+      description: "Принимает multipart/form-data. Поле: `file`. Макс. 5MB. Форматы: jpg, png, webp, gif.",
       security: [{ bearerAuth: [] }],
+      consumes: ["multipart/form-data"],
       params: {
         type: "object",
         properties: {
-          folder: { type: "string", enum: FOLDERS as unknown as string[] },
+          folder: { type: "string", enum: FOLDERS as unknown as string[], description: "Папка: events | blog | menu | tours | merch" },
         },
       },
       response: {
         200: {
           type: "object",
           properties: {
-            url: { type: "string" },
+            url: { type: "string", description: "Путь к файлу: /uploads/{folder}/{uuid}.webp" },
           },
         },
         400: { type: "object", properties: { message: { type: "string" } } },
