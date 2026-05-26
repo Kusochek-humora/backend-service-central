@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -27,6 +28,16 @@ export class MenuCategory {
 
   @Column({ default: true })
   isPublic!: boolean;
+
+  @Column({ nullable: true })
+  parentId?: number;
+
+  @ManyToOne(() => MenuCategory, (cat) => cat.children, { nullable: true, onDelete: "CASCADE" })
+  @JoinColumn({ name: "parentId" })
+  parent?: MenuCategory;
+
+  @OneToMany(() => MenuCategory, (cat) => cat.parent, { eager: false })
+  children!: MenuCategory[];
 
   @CreateDateColumn()
   createdAt!: Date;
@@ -72,9 +83,6 @@ export class MenuItem {
 
   @Column({ nullable: true })
   weight?: string;
-
-  @Column({ nullable: true })
-  alcoholType?: string;
 
   @Column({ default: true })
   isAvailable!: boolean;
