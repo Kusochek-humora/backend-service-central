@@ -1,6 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { AppDataSource } from "../../db/data-source";
 import { Category } from "../../db/entities/category.entity";
+import { requirePermission } from "../auth/permissions";
+import { Section } from "../../db/entities/user.entity";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -39,13 +41,12 @@ export async function categoriesRoutes(app: FastifyInstance) {
         401: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: async (request, reply) => {
-      try {
-        await request.jwtVerify();
-      } catch {
-        reply.status(401).send({ message: "Unauthorized" });
-      }
-    },
+    onRequest: [
+      async (request, reply) => {
+        try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+      },
+      requirePermission(Section.CATEGORIES),
+    ],
   }, async (request, reply) => {
     const { name } = request.body as { name: string };
     const category = categoryRepo.create({ name });
@@ -68,13 +69,12 @@ export async function categoriesRoutes(app: FastifyInstance) {
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: async (request, reply) => {
-      try {
-        await request.jwtVerify();
-      } catch {
-        reply.status(401).send({ message: "Unauthorized" });
-      }
-    },
+    onRequest: [
+      async (request, reply) => {
+        try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+      },
+      requirePermission(Section.CATEGORIES),
+    ],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const category = await categoryRepo.findOneBy({ id: Number(id) });

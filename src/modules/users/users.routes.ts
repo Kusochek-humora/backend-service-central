@@ -31,6 +31,7 @@ export async function usersRoutes(app: FastifyInstance) {
               email: { type: "string" },
               username: { type: "string" },
               role: { type: "string" },
+              permissions: { type: "array", items: { type: "string" } },
               createdAt: { type: "string" },
             },
           },
@@ -46,7 +47,7 @@ export async function usersRoutes(app: FastifyInstance) {
 
     const userRepo = AppDataSource.getRepository(User);
     const users = await userRepo.find({
-      select: { id: true, email: true, username: true, role: true, createdAt: true },
+      select: { id: true, email: true, username: true, role: true, permissions: true, createdAt: true },
     });
     return users;
   });

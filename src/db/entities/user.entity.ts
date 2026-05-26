@@ -18,6 +18,7 @@ export enum Section {
   MENU = "menu",
   TOURS = "tours",
   MERCH = "merch",
+  CATEGORIES = "categories",
 }
 
 @Entity("users")
