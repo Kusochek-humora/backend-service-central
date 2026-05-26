@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { AppDataSource } from "../../db/data-source";
-import { MenuCategory, MenuItem, AlcoholType } from "../../db/entities/menu.entity";
+import { MenuCategory, MenuItem } from "../../db/entities/menu.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 
@@ -54,7 +54,7 @@ const itemBodyProperties = {
   photos: { type: "array", items: { type: "string" } },
   volume: { type: "string" },
   weight: { type: "string" },
-  alcoholType: { type: "string", enum: Object.values(AlcoholType) },
+  alcoholType: { type: "string", description: "Тип алкоголя (произвольная строка, напр. Виски, Крафт, Вино)" },
   isAvailable: { type: "boolean" },
   isNew: { type: "boolean" },
   order: { type: "number" },
@@ -171,7 +171,7 @@ export async function menuRoutes(app: FastifyInstance) {
         403: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: [jwtGuard, requirePermission(Section.MENU)],
+    onRequest: [jwtGuard, requirePermission(Section.MENU_CATEGORIES)],
   }, async (request, reply) => {
     const body = request.body as Partial<MenuCategory>;
     const category = categoryRepo.create(body);
@@ -202,7 +202,7 @@ export async function menuRoutes(app: FastifyInstance) {
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: [jwtGuard, requirePermission(Section.MENU)],
+    onRequest: [jwtGuard, requirePermission(Section.MENU_CATEGORIES)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const category = await categoryRepo.findOneBy({ id: Number(id) });
@@ -225,7 +225,7 @@ export async function menuRoutes(app: FastifyInstance) {
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: [jwtGuard, requirePermission(Section.MENU)],
+    onRequest: [jwtGuard, requirePermission(Section.MENU_CATEGORIES)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const category = await categoryRepo.findOneBy({ id: Number(id) });

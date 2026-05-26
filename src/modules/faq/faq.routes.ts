@@ -6,14 +6,40 @@ import { Section } from "../../db/entities/user.entity";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
+const faqSchema = {
+  type: "object",
+  properties: {
+    id: { type: "number" },
+    question_ru: { type: "string" },
+    answer_ru: { type: "string" },
+    question_kz: { type: "string" },
+    answer_kz: { type: "string" },
+    question_en: { type: ["string", "null"] },
+    answer_en: { type: ["string", "null"] },
+    order: { type: "number" },
+  },
+};
+
+const faqBodyProperties = {
+  question_ru: { type: "string" },
+  answer_ru: { type: "string" },
+  question_kz: { type: "string" },
+  answer_kz: { type: "string" },
+  question_en: { type: "string" },
+  answer_en: { type: "string" },
+  order: { type: "number" },
+};
+
 export async function faqRoutes(app: FastifyInstance) {
   const faqRepo = AppDataSource.getRepository(Faq);
 
-  // PUBLIC — для витринного фронта
   app.get("/faq", {
     schema: {
       tags: ["FAQ Public"],
       summary: "Получить все FAQ (публичный)",
+      response: {
+        200: { type: "array", items: faqSchema },
+      },
     },
   }, async () => {
     return faqRepo.find({ order: { order: "ASC" } });
@@ -24,6 +50,10 @@ export async function faqRoutes(app: FastifyInstance) {
       tags: ["FAQ Public"],
       summary: "Получить FAQ по id (публичный)",
       params: { type: "object", properties: { id: { type: "number" } } },
+      response: {
+        200: faqSchema,
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
     },
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
@@ -32,12 +62,15 @@ export async function faqRoutes(app: FastifyInstance) {
     return faq;
   });
 
-  // ADMIN — для админ панели, требует токен
   app.get("/admin/faq", {
     schema: {
       tags: ["FAQ Admin"],
       summary: "Получить все FAQ (админ)",
       ...bearerAuth,
+      response: {
+        200: { type: "array", items: faqSchema },
+        401: { type: "object", properties: { message: { type: "string" } } },
+      },
     },
     onRequest: async (request, reply) => {
       try {
@@ -58,15 +91,12 @@ export async function faqRoutes(app: FastifyInstance) {
       body: {
         type: "object",
         required: ["question_ru", "answer_ru", "question_kz", "answer_kz"],
-        properties: {
-          question_ru: { type: "string" },
-          answer_ru: { type: "string" },
-          question_kz: { type: "string" },
-          answer_kz: { type: "string" },
-          question_en: { type: "string" },
-          answer_en: { type: "string" },
-          order: { type: "number" },
-        },
+        properties: faqBodyProperties,
+      },
+      response: {
+        201: faqSchema,
+        401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
       },
     },
     onRequest: [
@@ -88,6 +118,13 @@ export async function faqRoutes(app: FastifyInstance) {
       summary: "Обновить FAQ",
       ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
+      body: { type: "object", properties: faqBodyProperties },
+      response: {
+        200: faqSchema,
+        401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
     },
     onRequest: [
       async (request, reply) => {

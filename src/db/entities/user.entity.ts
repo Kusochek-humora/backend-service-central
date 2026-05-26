@@ -16,6 +16,7 @@ export enum Section {
   EVENTS = "events",
   BLOG = "blog",
   MENU = "menu",
+  MENU_CATEGORIES = "menu_categories",
   TOURS = "tours",
   MERCH = "merch",
   CATEGORIES = "categories",

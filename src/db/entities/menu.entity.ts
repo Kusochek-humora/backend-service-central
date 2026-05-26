@@ -8,14 +8,6 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 
-export enum AlcoholType {
-  BEER = "beer",
-  WINE = "wine",
-  SPIRITS = "spirits",
-  COCKTAIL = "cocktail",
-  OTHER = "other",
-}
-
 @Entity("menu_categories")
 export class MenuCategory {
   @PrimaryGeneratedColumn()
@@ -81,8 +73,8 @@ export class MenuItem {
   @Column({ nullable: true })
   weight?: string;
 
-  @Column({ type: "enum", enum: AlcoholType, nullable: true })
-  alcoholType?: AlcoholType;
+  @Column({ nullable: true })
+  alcoholType?: string;
 
   @Column({ default: true })
   isAvailable!: boolean;
