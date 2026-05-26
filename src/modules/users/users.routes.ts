@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import bcrypt from "bcryptjs";
 import { AppDataSource } from "../../db/data-source";
-import { User, UserRole } from "../../db/entities/user.entity";
+import { User, UserRole, Section } from "../../db/entities/user.entity";
 
 type JwtUser = { id: number; role: UserRole };
 
@@ -97,6 +97,61 @@ export async function usersRoutes(app: FastifyInstance) {
 
     const { password: _, ...result } = newUser;
     return reply.status(201).send(result);
+  });
+
+  app.patch("/users/:id/permissions", {
+    schema: {
+      tags: ["Users"],
+      summary: "Обновить пермишены редактора (только chief_editor)",
+      ...bearerAuth,
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "number" },
+        },
+      },
+      body: {
+        type: "object",
+        required: ["permissions"],
+        properties: {
+          permissions: {
+            type: "array",
+            items: { type: "string", enum: Object.values(Section) },
+          },
+        },
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            id: { type: "number" },
+            email: { type: "string" },
+            username: { type: "string" },
+            role: { type: "string" },
+            permissions: { type: "array", items: { type: "string" } },
+          },
+        },
+        403: { type: "object", properties: { message: { type: "string" } } },
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+  }, async (request, reply) => {
+    const user = request.user as JwtUser;
+    if (user.role !== UserRole.CHIEF_EDITOR) {
+      return reply.status(403).send({ message: "Forbidden" });
+    }
+
+    const { id } = request.params as { id: string };
+    const { permissions } = request.body as { permissions: Section[] };
+
+    const userRepo = AppDataSource.getRepository(User);
+    const target = await userRepo.findOneBy({ id: Number(id) });
+    if (!target) return reply.status(404).send({ message: "User not found" });
+
+    target.permissions = permissions;
+    await userRepo.save(target);
+
+    return { id: target.id, email: target.email, username: target.username, role: target.role, permissions: target.permissions };
   });
 
   app.delete("/users/:id", {

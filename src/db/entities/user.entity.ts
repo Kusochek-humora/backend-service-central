@@ -11,6 +11,15 @@ export enum UserRole {
   CHIEF_EDITOR = "chief_editor",
 }
 
+export enum Section {
+  FAQ = "faq",
+  EVENTS = "events",
+  BLOG = "blog",
+  MENU = "menu",
+  TOURS = "tours",
+  MERCH = "merch",
+}
+
 @Entity("users")
 export class User {
   @PrimaryGeneratedColumn()
@@ -27,6 +36,9 @@ export class User {
 
   @Column({ type: "enum", enum: UserRole, default: UserRole.EDITOR })
   role!: UserRole;
+
+  @Column({ type: "text", array: true, default: "{}" })
+  permissions!: Section[];
 
   @CreateDateColumn()
   createdAt!: Date;
