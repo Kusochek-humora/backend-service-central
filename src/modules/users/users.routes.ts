@@ -254,6 +254,7 @@ export async function usersRoutes(app: FastifyInstance) {
             message: { type: "string" },
           },
         },
+        400: { type: "object", properties: { message: { type: "string" } } },
         401: { type: "object", properties: { message: { type: "string" } } },
         403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
@@ -266,6 +267,10 @@ export async function usersRoutes(app: FastifyInstance) {
     }
 
     const { id } = request.params as { id: string };
+    if (Number(id) === user.id) {
+      return reply.status(400).send({ message: "Cannot delete yourself" });
+    }
+
     const userRepo = AppDataSource.getRepository(User);
 
     const target = await userRepo.findOneBy({ id: Number(id) });

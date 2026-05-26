@@ -1,6 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { AppDataSource } from "../../db/data-source";
 import { Faq } from "../../db/entities/faq.entity";
+import { requirePermission } from "../auth/permissions";
+import { Section } from "../../db/entities/user.entity";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -67,13 +69,12 @@ export async function faqRoutes(app: FastifyInstance) {
         },
       },
     },
-    onRequest: async (request, reply) => {
-      try {
-        await request.jwtVerify();
-      } catch {
-        reply.status(401).send({ message: "Unauthorized" });
-      }
-    },
+    onRequest: [
+      async (request, reply) => {
+        try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+      },
+      requirePermission(Section.FAQ),
+    ],
   }, async (request, reply) => {
     const body = request.body as Partial<Faq>;
     const faq = faqRepo.create(body);
@@ -88,13 +89,12 @@ export async function faqRoutes(app: FastifyInstance) {
       ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
     },
-    onRequest: async (request, reply) => {
-      try {
-        await request.jwtVerify();
-      } catch {
-        reply.status(401).send({ message: "Unauthorized" });
-      }
-    },
+    onRequest: [
+      async (request, reply) => {
+        try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+      },
+      requirePermission(Section.FAQ),
+    ],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const faq = await faqRepo.findOneBy({ id: Number(id) });
@@ -115,16 +115,16 @@ export async function faqRoutes(app: FastifyInstance) {
       response: {
         200: { type: "object", properties: { message: { type: "string" } } },
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: async (request, reply) => {
-      try {
-        await request.jwtVerify();
-      } catch {
-        reply.status(401).send({ message: "Unauthorized" });
-      }
-    },
+    onRequest: [
+      async (request, reply) => {
+        try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+      },
+      requirePermission(Section.FAQ),
+    ],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const faq = await faqRepo.findOneBy({ id: Number(id) });
