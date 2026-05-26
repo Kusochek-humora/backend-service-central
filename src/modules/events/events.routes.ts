@@ -109,6 +109,7 @@ export async function eventsRoutes(app: FastifyInstance) {
       hall?: Hall;
     };
 
+    const today = new Date().toISOString().split("T")[0];
     const where: FindOptionsWhere<Event> = {};
 
     if (hall) where.hall = hall;
@@ -116,11 +117,12 @@ export async function eventsRoutes(app: FastifyInstance) {
     if (date) {
       where.date = date;
     } else if (period === "today") {
-      const { start } = getTodayRange();
-      where.date = start;
+      where.date = today;
     } else if (period === "week") {
-      const { start, end } = getWeekRange();
-      where.date = Between(start, end);
+      const { end } = getWeekRange();
+      where.date = Between(today, end);
+    } else {
+      where.date = Between(today, "2999-12-31");
     }
 
     return eventRepo.find({ where, order: { date: "ASC", time: "ASC" } });
@@ -141,6 +143,68 @@ export async function eventsRoutes(app: FastifyInstance) {
     const event = await eventRepo.findOneBy({ id: Number(id) });
     if (!event) return reply.status(404).send({ message: "Not found" });
     return event;
+  });
+
+  const pastEventSchema = {
+    type: "object",
+    properties: {
+      id: { type: "number" },
+      title: { type: "string" },
+      hall: { type: "string" },
+      date: { type: "string" },
+      time: { type: "string" },
+      notion: { type: ["string", "null"] },
+      description: { type: ["string", "null"] },
+      comedians: { type: ["string", "null"] },
+      subtext: { type: ["string", "null"] },
+      category: {
+        nullable: true,
+        type: "object",
+        properties: {
+          id: { type: "number" },
+          name: { type: "string" },
+        },
+      },
+    },
+  };
+
+  app.get("/events/past", {
+    schema: {
+      tags: ["Events Public"],
+      summary: "Прошедшие события без фото, с пагинацией",
+      querystring: {
+        type: "object",
+        properties: {
+          page: { type: "number", description: "Страница (по умолчанию 1)" },
+          limit: { type: "number", description: "Кол-во на странице (по умолчанию 20)" },
+        },
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            data: { type: "array", items: pastEventSchema },
+            total: { type: "number" },
+            page: { type: "number" },
+            limit: { type: "number" },
+            pages: { type: "number" },
+          },
+        },
+      },
+    },
+  }, async (request) => {
+    const { page = 1, limit = 20 } = request.query as { page?: number; limit?: number };
+    const today = new Date().toISOString().split("T")[0];
+
+    const [events, total] = await eventRepo.findAndCount({
+      where: { date: Between("2000-01-01", today) },
+      order: { date: "DESC", time: "DESC" },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const data = events.map(({ photo: _p, link: _l, isDonation: _d, isOnMainPage: _m, categoryId: _cid, createdAt: _ca, updatedAt: _ua, ...rest }) => rest);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
   });
 
   // ADMIN

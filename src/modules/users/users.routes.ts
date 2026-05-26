@@ -64,6 +64,11 @@ export async function usersRoutes(app: FastifyInstance) {
           email: { type: "string" },
           username: { type: "string" },
           password: { type: "string" },
+          permissions: {
+            type: "array",
+            items: { type: "string", enum: Object.values(Section) },
+            description: "Права доступа (опционально, по умолчанию [])",
+          },
         },
       },
       response: {
@@ -74,6 +79,7 @@ export async function usersRoutes(app: FastifyInstance) {
             email: { type: "string" },
             username: { type: "string" },
             role: { type: "string" },
+            permissions: { type: "array", items: { type: "string" } },
           },
         },
         403: { type: "object", properties: { message: { type: "string" } } },
@@ -85,15 +91,16 @@ export async function usersRoutes(app: FastifyInstance) {
       return reply.status(403).send({ message: "Forbidden" });
     }
 
-    const { email, username, password } = request.body as {
+    const { email, username, password, permissions = [] } = request.body as {
       email: string;
       username: string;
       password: string;
+      permissions?: Section[];
     };
 
     const userRepo = AppDataSource.getRepository(User);
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = userRepo.create({ email, username, password: hashedPassword });
+    const newUser = userRepo.create({ email, username, password: hashedPassword, permissions });
     await userRepo.save(newUser);
 
     const { password: _, ...result } = newUser;

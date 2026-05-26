@@ -78,4 +78,94 @@ export async function uploadRoutes(app: FastifyInstance) {
     const url = `/uploads/${folder}/${filename}`;
     return { url };
   });
+
+  const jwtGuard = async (request: any, reply: any) => {
+    try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+  };
+
+  app.get("/admin/uploads/:folder", {
+    schema: {
+      tags: ["Upload"],
+      summary: "Список файлов в папке с пагинацией",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          folder: { type: "string", enum: FOLDERS as unknown as string[] },
+        },
+      },
+      querystring: {
+        type: "object",
+        properties: {
+          page: { type: "number", description: "Страница (по умолчанию 1)" },
+          limit: { type: "number", description: "Кол-во на странице (по умолчанию 50)" },
+        },
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            folder: { type: "string" },
+            data: { type: "array", items: { type: "string" } },
+            total: { type: "number" },
+            page: { type: "number" },
+            limit: { type: "number" },
+            pages: { type: "number" },
+          },
+        },
+        400: { type: "object", properties: { message: { type: "string" } } },
+        401: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+    onRequest: jwtGuard,
+  }, async (request, reply) => {
+    const { folder } = request.params as { folder: Folder };
+    if (!FOLDERS.includes(folder)) return reply.status(400).send({ message: "Invalid folder" });
+
+    const { page = 1, limit = 50 } = request.query as { page?: number; limit?: number };
+
+    const dir = path.join(UPLOAD_DIR, folder);
+    const allFiles = await fs.readdir(dir);
+    const total = allFiles.length;
+    const data = allFiles.slice((page - 1) * limit, page * limit);
+
+    return { folder, data, total, page, limit, pages: Math.ceil(total / limit) };
+  });
+
+  app.delete("/admin/uploads/:folder/:filename", {
+    schema: {
+      tags: ["Upload"],
+      summary: "Удалить файл из папки",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          folder: { type: "string", enum: FOLDERS as unknown as string[] },
+          filename: { type: "string" },
+        },
+      },
+      response: {
+        200: { type: "object", properties: { message: { type: "string" } } },
+        400: { type: "object", properties: { message: { type: "string" } } },
+        401: { type: "object", properties: { message: { type: "string" } } },
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+    onRequest: jwtGuard,
+  }, async (request, reply) => {
+    const { folder, filename } = request.params as { folder: Folder; filename: string };
+    if (!FOLDERS.includes(folder)) return reply.status(400).send({ message: "Invalid folder" });
+
+    if (filename.includes("..") || filename.includes("/")) {
+      return reply.status(400).send({ message: "Invalid filename" });
+    }
+
+    const filepath = path.join(UPLOAD_DIR, folder, filename);
+    try {
+      await fs.unlink(filepath);
+      return { message: "Deleted" };
+    } catch {
+      return reply.status(404).send({ message: "File not found" });
+    }
+  });
 }
