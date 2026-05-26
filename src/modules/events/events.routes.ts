@@ -1,7 +1,9 @@
 import { FastifyInstance } from "fastify";
 import { AppDataSource } from "../../db/data-source";
 import { Event, Hall } from "../../db/entities/event.entity";
-import { Between, FindOptionsWhere, MoreThanOrEqual, LessThan } from "typeorm";
+import { Between, FindOptionsWhere } from "typeorm";
+import { requirePermission } from "../auth/permissions";
+import { Section } from "../../db/entities/user.entity";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -153,9 +155,12 @@ export async function eventsRoutes(app: FastifyInstance) {
         401: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: async (request, reply) => {
-      try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
-    },
+    onRequest: [
+      async (request, reply) => {
+        try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+      },
+      requirePermission(Section.EVENTS),
+    ],
   }, async (request) => {
     const { date, period, hall } = request.query as {
       date?: string;
@@ -189,9 +194,12 @@ export async function eventsRoutes(app: FastifyInstance) {
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: async (request, reply) => {
-      try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
-    },
+    onRequest: [
+      async (request, reply) => {
+        try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+      },
+      requirePermission(Section.EVENTS),
+    ],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const event = await eventRepo.findOneBy({ id: Number(id) });
@@ -210,9 +218,12 @@ export async function eventsRoutes(app: FastifyInstance) {
         401: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: async (request, reply) => {
-      try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
-    },
+    onRequest: [
+      async (request, reply) => {
+        try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+      },
+      requirePermission(Section.EVENTS),
+    ],
   }, async (request, reply) => {
     const body = request.body as Partial<Event>;
     const event = eventRepo.create(body);
@@ -233,9 +244,12 @@ export async function eventsRoutes(app: FastifyInstance) {
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: async (request, reply) => {
-      try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
-    },
+    onRequest: [
+      async (request, reply) => {
+        try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+      },
+      requirePermission(Section.EVENTS),
+    ],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const event = await eventRepo.findOneBy({ id: Number(id) });
@@ -258,9 +272,12 @@ export async function eventsRoutes(app: FastifyInstance) {
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: async (request, reply) => {
-      try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
-    },
+    onRequest: [
+      async (request, reply) => {
+        try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+      },
+      requirePermission(Section.EVENTS),
+    ],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const event = await eventRepo.findOneBy({ id: Number(id) });
