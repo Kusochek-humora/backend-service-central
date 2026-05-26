@@ -66,8 +66,15 @@ const updateBodySchema = {
   properties: eventProperties,
 };
 
+// Events are stored in Almaty time (UTC+5); offset server UTC to match
+const ALMATY_OFFSET_MS = 5 * 60 * 60 * 1000;
+
+function almatyNow(): Date {
+  return new Date(Date.now() + ALMATY_OFFSET_MS);
+}
+
 function getTodayRange(): { start: string; end: string } {
-  const now = new Date();
+  const now = almatyNow();
   const start = now.toISOString().split("T")[0];
   const next = new Date(now);
   next.setDate(next.getDate() + 1);
@@ -76,7 +83,7 @@ function getTodayRange(): { start: string; end: string } {
 }
 
 function getWeekRange(): { start: string; end: string } {
-  const now = new Date();
+  const now = almatyNow();
   const start = now.toISOString().split("T")[0];
   const next = new Date(now);
   next.setDate(next.getDate() + 7);
@@ -117,9 +124,9 @@ export async function eventsRoutes(app: FastifyInstance) {
       categoryId?: number;
     };
 
-    const now = new Date();
+    const now = almatyNow();
     const today = now.toISOString().split("T")[0];
-    const currentTime = now.toTimeString().slice(0, 8);
+    const currentTime = now.toISOString().split("T")[1].slice(0, 8);
 
     const qb = eventRepo.createQueryBuilder("e").leftJoinAndSelect("e.category", "category");
 
@@ -210,9 +217,9 @@ export async function eventsRoutes(app: FastifyInstance) {
     },
   }, async (request) => {
     const { page = 1, limit = 20 } = request.query as { page?: number; limit?: number };
-    const now = new Date();
+    const now = almatyNow();
     const today = now.toISOString().split("T")[0];
-    const currentTime = now.toTimeString().slice(0, 8);
+    const currentTime = now.toISOString().split("T")[1].slice(0, 8);
 
     const [events, total] = await eventRepo.createQueryBuilder("e")
       .leftJoinAndSelect("e.category", "category")
