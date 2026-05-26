@@ -11,6 +11,9 @@ import { authRoutes } from "./modules/auth/auth.routes";
 import { usersRoutes } from "./modules/users/users.routes";
 import { faqRoutes } from "./modules/faq/faq.routes";
 import { eventsRoutes } from "./modules/events/events.routes";
+import { uploadRoutes } from "./modules/upload/upload.routes";
+import fastifyStatic from "@fastify/static";
+import path from "path";
 import { categoriesRoutes } from "./modules/events/categories.routes";
 
 const app = fastify({ logger: true });
@@ -62,6 +65,11 @@ const start = async () => {
     app.register(faqRoutes);
     app.register(categoriesRoutes);
     app.register(eventsRoutes);
+    app.register(uploadRoutes);
+    app.register(fastifyStatic, {
+      root: path.join(process.cwd(), "uploads"),
+      prefix: "/uploads/",
+    });
 
     await app.listen({ port: env.port, host: env.host });
     app.log.info(`Server running ${env.port} , ${env.host}`);
