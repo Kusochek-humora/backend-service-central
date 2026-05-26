@@ -282,7 +282,7 @@ export async function menuRoutes(app: FastifyInstance) {
     const body = request.body as Partial<MenuItem>;
     const item = itemRepo.create(body);
     await itemRepo.save(item);
-    const saved = await itemRepo.findOne({ where: { id: item.id }, relations: ["category"] });
+    const saved = await itemRepo.findOne({ where: { id: item.id }, relations: { category: true } });
     return reply.status(201).send(saved);
   });
 
@@ -307,7 +307,7 @@ export async function menuRoutes(app: FastifyInstance) {
     if (!item) return reply.status(404).send({ message: "Not found" });
     itemRepo.merge(item, request.body as Partial<MenuItem>);
     await itemRepo.save(item);
-    return itemRepo.findOne({ where: { id: item.id }, relations: ["category"] });
+    return itemRepo.findOne({ where: { id: item.id }, relations: { category: true } });
   });
 
   app.delete("/admin/menu/:id", {
