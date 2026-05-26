@@ -9,6 +9,8 @@ import { AppDataSource } from "./db/data-source";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { usersRoutes } from "./modules/users/users.routes";
 import { faqRoutes } from "./modules/faq/faq.routes";
+import { eventsRoutes } from "./modules/events/events.routes";
+import { categoriesRoutes } from "./modules/events/categories.routes";
 
 const app = fastify({ logger: true });
 
@@ -57,6 +59,8 @@ const start = async () => {
     app.register(authRoutes);
     app.register(usersRoutes);
     app.register(faqRoutes);
+    app.register(categoriesRoutes);
+    app.register(eventsRoutes);
 
     await app.listen({ port: env.port, host: env.host });
     app.log.info(`Server running ${env.port} , ${env.host}`);
