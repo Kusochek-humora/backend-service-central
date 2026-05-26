@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { AppDataSource } from "../../db/data-source";
-import { Event, Hall } from "../../db/entities/event.entity";
+import { Event, Hall, Language } from "../../db/entities/event.entity";
 import { Between, FindOptionsWhere } from "typeorm";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
@@ -14,6 +14,7 @@ const eventSchema = {
     title: { type: "string" },
     photo: { type: "string" },
     hall: { type: "string", enum: ["big", "small"] },
+    language: { type: "string", enum: ["ru", "kz", "en"] },
     link: { type: "string" },
     date: { type: "string", description: "YYYY-MM-DD" },
     time: { type: "string", description: "HH:MM" },
@@ -41,6 +42,7 @@ const eventProperties = {
   title: { type: "string" },
   photo: { type: "string", description: "URL из /admin/upload/events" },
   hall: { type: "string", enum: Object.values(Hall), description: "big | small" },
+  language: { type: "string", enum: Object.values(Language), description: "Язык события: ru | kz | en" },
   link: { type: "string", description: "Ссылка на билеты" },
   date: { type: "string", description: "YYYY-MM-DD" },
   time: { type: "string", description: "HH:MM" },
@@ -96,6 +98,7 @@ export async function eventsRoutes(app: FastifyInstance) {
           date: { type: "string", description: "Фильтр по дате YYYY-MM-DD" },
           period: { type: "string", enum: ["today", "week"], description: "Сегодня или вся неделя" },
           hall: { type: "string", enum: Object.values(Hall), description: "Фильтр по залу" },
+          language: { type: "string", enum: Object.values(Language), description: "Фильтр по языку: ru | kz | en" },
         },
       },
       response: {
@@ -103,16 +106,18 @@ export async function eventsRoutes(app: FastifyInstance) {
       },
     },
   }, async (request) => {
-    const { date, period, hall } = request.query as {
+    const { date, period, hall, language } = request.query as {
       date?: string;
       period?: "today" | "week";
       hall?: Hall;
+      language?: Language;
     };
 
     const today = new Date().toISOString().split("T")[0];
     const where: FindOptionsWhere<Event> = {};
 
     if (hall) where.hall = hall;
+    if (language) where.language = language;
 
     if (date) {
       where.date = date;
@@ -150,9 +155,10 @@ export async function eventsRoutes(app: FastifyInstance) {
     properties: {
       id: { type: "number" },
       title: { type: "string" },
-      hall: { type: "string" },
-      date: { type: "string" },
-      time: { type: "string" },
+      hall: { type: "string", enum: ["big", "small"] },
+      language: { type: "string", enum: ["ru", "kz", "en"] },
+      date: { type: "string", description: "YYYY-MM-DD" },
+      time: { type: "string", description: "HH:MM" },
       notion: { type: ["string", "null"] },
       description: { type: ["string", "null"] },
       comedians: { type: ["string", "null"] },
@@ -219,11 +225,13 @@ export async function eventsRoutes(app: FastifyInstance) {
           date: { type: "string" },
           period: { type: "string", enum: ["today", "week"] },
           hall: { type: "string", enum: Object.values(Hall) },
+          language: { type: "string", enum: Object.values(Language) },
         },
       },
       response: {
         200: { type: "array", items: eventSchema },
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
       },
     },
     onRequest: [
@@ -233,14 +241,16 @@ export async function eventsRoutes(app: FastifyInstance) {
       requirePermission(Section.EVENTS),
     ],
   }, async (request) => {
-    const { date, period, hall } = request.query as {
+    const { date, period, hall, language } = request.query as {
       date?: string;
       period?: "today" | "week";
       hall?: Hall;
+      language?: Language;
     };
 
     const where: FindOptionsWhere<Event> = {};
     if (hall) where.hall = hall;
+    if (language) where.language = language;
     if (date) {
       where.date = date;
     } else if (period === "today") {
@@ -262,6 +272,7 @@ export async function eventsRoutes(app: FastifyInstance) {
       response: {
         200: eventSchema,
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
@@ -287,6 +298,7 @@ export async function eventsRoutes(app: FastifyInstance) {
       response: {
         201: eventSchema,
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
       },
     },
     onRequest: [
@@ -312,6 +324,7 @@ export async function eventsRoutes(app: FastifyInstance) {
       response: {
         200: eventSchema,
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
@@ -340,6 +353,7 @@ export async function eventsRoutes(app: FastifyInstance) {
       response: {
         200: { type: "object", properties: { message: { type: "string" } } },
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },

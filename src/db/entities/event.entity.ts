@@ -9,9 +9,16 @@ import {
 } from "typeorm";
 import { Category } from "./category.entity";
 
+
 export enum Hall {
   BIG = "big",
   SMALL = "small",
+}
+
+export enum Language {
+  RU = "ru",
+  KZ = "kz",
+  EN = "en",
 }
 
 @Entity("events")
@@ -27,6 +34,9 @@ export class Event {
 
   @Column({ type: "enum", enum: Hall })
   hall!: Hall;
+
+  @Column({ type: "enum", enum: Language, default: Language.RU })
+  language!: Language;
 
   @Column()
   link!: string;

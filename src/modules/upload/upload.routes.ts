@@ -4,6 +4,8 @@ import path from "path";
 import fs from "fs/promises";
 import sharp from "sharp";
 import { randomUUID } from "crypto";
+import { requirePermission } from "../auth/permissions";
+import { Section } from "../../db/entities/user.entity";
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -41,6 +43,7 @@ export async function uploadRoutes(app: FastifyInstance) {
         },
         400: { type: "object", properties: { message: { type: "string" } } },
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
       },
     },
     onRequest: async (request, reply) => {
@@ -56,6 +59,9 @@ export async function uploadRoutes(app: FastifyInstance) {
     if (!FOLDERS.includes(folder)) {
       return reply.status(400).send({ message: "Invalid folder" });
     }
+
+    await requirePermission(folder as Section)(request, reply);
+    if (reply.sent) return;
 
     const file = await request.file();
     if (!file) return reply.status(400).send({ message: "No file provided" });
@@ -115,9 +121,10 @@ export async function uploadRoutes(app: FastifyInstance) {
         },
         400: { type: "object", properties: { message: { type: "string" } } },
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: jwtGuard,
+    onRequest: [jwtGuard, requirePermission(Section.FILES)],
   }, async (request, reply) => {
     const { folder } = request.params as { folder: Folder };
     if (!FOLDERS.includes(folder)) return reply.status(400).send({ message: "Invalid folder" });
@@ -148,10 +155,11 @@ export async function uploadRoutes(app: FastifyInstance) {
         200: { type: "object", properties: { message: { type: "string" } } },
         400: { type: "object", properties: { message: { type: "string" } } },
         401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
     },
-    onRequest: jwtGuard,
+    onRequest: [jwtGuard, requirePermission(Section.FILES)],
   }, async (request, reply) => {
     const { folder, filename } = request.params as { folder: Folder; filename: string };
     if (!FOLDERS.includes(folder)) return reply.status(400).send({ message: "Invalid folder" });
