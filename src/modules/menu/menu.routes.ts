@@ -51,6 +51,7 @@ const itemSchema = {
     weight: { type: ["string", "null"] },
     isAvailable: { type: "boolean" },
     isNew: { type: "boolean" },
+    discount: { type: ["number", "null"] },
     order: { type: "number" },
     categoryId: { type: "number" },
     category: subcategorySchema,
@@ -71,6 +72,7 @@ const itemBodyProperties = {
   weight: { type: "string", description: "Граммовка: 200г, порция" },
   isAvailable: { type: "boolean" },
   isNew: { type: "boolean" },
+  discount: { type: "number", description: "Скидка в процентах (0-100)" },
   order: { type: "number" },
   categoryId: { type: "number", description: "ID подкатегории (или главной если подкатегорий нет)" },
 };

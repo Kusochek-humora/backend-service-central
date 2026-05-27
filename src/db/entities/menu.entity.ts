@@ -90,6 +90,9 @@ export class MenuItem {
   @Column({ default: false })
   isNew!: boolean;
 
+  @Column({ nullable: true, type: "int" })
+  discount?: number;
+
   @Column({ default: 0 })
   order!: number;
 
