@@ -114,29 +114,37 @@ async function sendDocument(chatId: string, buffer: Buffer, filename: string, ca
   return res.json() as Promise<{ ok: boolean; result?: { message_id: number } }>;
 }
 
+
 async function sendMediaGroup(
   chatId: string,
-  files: { buffer: Buffer; filename: string; caption?: string }[]
-): Promise<{ ok: boolean; result?: { message_id: number }[] }> {
+  post: { buffer: Buffer; filename: string; caption: string },
+  stories: { buffer: Buffer; filename: string },
+): Promise<{ ok: boolean; description?: string; result?: { message_id: number }[] }> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const api = `https://api.telegram.org/bot${token}`;
-  const formData = new FormData();
-  formData.append("chat_id", chatId);
+  const boundary = `Boundary${Date.now()}`;
+  const mediaJson = JSON.stringify([
+    { type: "document", media: "attach://stories" },
+    { type: "document", media: "attach://post", caption: post.caption },
+  ]);
 
-  const media = files.map((file, i) => ({
-    type: "document",
-    media: `attach://file${i}`,
-    disable_content_type_detection: true,
-    ...(file.caption ? { caption: file.caption } : {}),
-  }));
+  const parts: Buffer[] = [
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${chatId}\r\n`),
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="media"\r\n\r\n${mediaJson}\r\n`),
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="stories"; filename="stories.webp"\r\nContent-Type: application/octet-stream\r\n\r\n`),
+    stories.buffer,
+    Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="post"; filename="post.webp"\r\nContent-Type: application/octet-stream\r\n\r\n`),
+    post.buffer,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ];
 
-  formData.append("media", JSON.stringify(media));
-  files.forEach((file, i) => {
-    formData.append(`file${i}`, new Blob([new Uint8Array(file.buffer)], { type: "application/octet-stream" }), file.filename);
+  const body = Buffer.concat(parts);
+  const res = await fetch(`${api}/sendMediaGroup`, {
+    method: "POST",
+    headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
+    body,
   });
-
-  const res = await fetch(`${api}/sendMediaGroup`, { method: "POST", body: formData });
-  return res.json() as Promise<{ ok: boolean; description?: string; result?: { message_id: number; chat?: unknown }[] }>;
+  return res.json() as Promise<{ ok: boolean; description?: string; result?: { message_id: number }[] }>;
 }
 
 async function editDocument(chatId: string, messageId: string, buffer: Buffer, filename: string, caption: string): Promise<void> {
@@ -165,21 +173,18 @@ export async function sendInternalEvent(event: {
     if (!postBuf) return { error: "photo file not found" };
 
     const postFilename = `${event.date}_${event.title}_пост.webp`;
-    const files: { buffer: Buffer; filename: string; caption?: string }[] = [
-      { buffer: postBuf, filename: postFilename, caption },
-    ];
 
     if (event.photoStories) {
       const storiesBuf = await readFileBuffer(event.photoStories);
       if (storiesBuf) {
-        files.push({ buffer: storiesBuf, filename: `${event.date}_${event.title}_сториз.webp` });
+        const sent = await sendMediaGroup(
+          chatId,
+          { buffer: postBuf, filename: postFilename, caption },
+          { buffer: storiesBuf, filename: `${event.date}_${event.title}_сториз.webp` },
+        );
+        if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
+        return { msgId: String(sent.result[0].message_id) };
       }
-    }
-
-    if (files.length > 1) {
-      const sent = await sendMediaGroup(chatId, files);
-      if (!sent.ok || !sent.result?.[0]) return { error: JSON.stringify(sent) };
-      return { msgId: String(sent.result[0].message_id) };
     }
 
     const sent = await sendDocument(chatId, postBuf, postFilename, caption) as any;
@@ -227,25 +232,21 @@ export async function sendInternalTour(tour: {
     if (!postBuf) return { error: "photo file not found" };
 
     const postFilename = `${tour.title}_пост.webp`;
-    const files: { buffer: Buffer; filename: string; caption?: string }[] = [
-      { buffer: postBuf, filename: postFilename, caption },
-    ];
-
     if (tour.photoStories) {
       const storiesBuf = await readFileBuffer(tour.photoStories);
       if (storiesBuf) {
-        files.push({ buffer: storiesBuf, filename: `${tour.title}_сториз.webp` });
+        const sent = await sendMediaGroup(
+          chatId,
+          { buffer: postBuf, filename: postFilename, caption },
+          { buffer: storiesBuf, filename: `${tour.title}_сториз.webp` },
+        );
+        if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
+        return { msgId: String(sent.result[0].message_id) };
       }
     }
 
-    if (files.length > 1) {
-      const sent = await sendMediaGroup(chatId, files);
-      if (!sent.ok || !sent.result?.[0]) return { error: "failed to send media group" };
-      return { msgId: String(sent.result[0].message_id) };
-    }
-
-    const sent = await sendDocument(chatId, postBuf, postFilename, caption);
-    if (!sent.ok) return { error: "failed to send post document" };
+    const sent = await sendDocument(chatId, postBuf, postFilename, caption) as any;
+    if (!sent.ok) return { error: sent.description ?? "failed to send post document" };
     return { msgId: String(sent.result!.message_id) };
   } catch (e) {
     return { error: String(e) };
