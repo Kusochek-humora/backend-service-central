@@ -59,6 +59,15 @@ export class Event {
   @Column({ default: false })
   publishToTelegram!: boolean;
 
+  @Column({ default: false })
+  publishToInternalChannel!: boolean;
+
+  @Column({ nullable: true })
+  photoStories?: string;
+
+  @Column({ nullable: true, type: "bigint" })
+  internalMsgId?: string;
+
   @Column({ nullable: true })
   notion?: string;
 

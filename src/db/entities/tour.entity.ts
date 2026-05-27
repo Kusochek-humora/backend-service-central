@@ -24,6 +24,15 @@ export class Tour {
   @Column({ default: 0 })
   order!: number;
 
+  @Column({ nullable: true })
+  photoStories?: string;
+
+  @Column({ default: false })
+  publishToInternalChannel!: boolean;
+
+  @Column({ nullable: true, type: "bigint" })
+  internalMsgId?: string;
+
   @OneToMany(() => TourShow, (show) => show.tour, { cascade: true })
   shows!: TourShow[];
 

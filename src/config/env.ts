@@ -24,4 +24,9 @@ export const env = {
     name:     required("DB_NAME"),
   },
   jwtSecret: required("JWT_SECRET"),
+  telegram: {
+    botToken:        optional("TELEGRAM_BOT_TOKEN", ""),
+    chatId:          optional("TELEGRAM_CHAT_ID", ""),
+    internalChatId:  optional("INTERNAL_CHANNEL_ID", ""),
+  },
 };

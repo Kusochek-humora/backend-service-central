@@ -4,7 +4,7 @@ import { Event, Hall, Language } from "../../db/entities/event.entity";
 import { Between, FindOptionsWhere } from "typeorm";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
-import { notifyEventCreated } from "../../utils/telegram";
+import { notifyEventCreated, sendInternalEvent, updateInternalEvent } from "../../utils/telegram";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -23,6 +23,9 @@ const eventSchema = {
     isSoldOut: { type: "boolean" },
     isOnMainPage: { type: "boolean" },
     publishToTelegram: { type: "boolean" },
+    publishToInternalChannel: { type: "boolean" },
+    photoStories: { type: ["string", "null"] },
+    internalMsgId: { type: ["string", "null"] },
     notion: { type: ["string", "null"] },
     description: { type: ["string", "null"] },
     comedians: { type: ["string", "null"] },
@@ -53,6 +56,8 @@ const eventProperties = {
   isSoldOut: { type: "boolean", description: "Билеты проданы" },
   isOnMainPage: { type: "boolean", description: "Показывать на главной" },
   publishToTelegram: { type: "boolean", description: "Опубликовать анонс в Telegram канал" },
+  publishToInternalChannel: { type: "boolean", description: "Отправить афишу в канал для персонала" },
+  photoStories: { type: "string", description: "URL афиши для сториз (опционально)" },
   notion: { type: "string", description: "Краткое описание (опционально)" },
   description: { type: "string", description: "Полное описание (опционально)" },
   comedians: { type: "string", description: "Участники (опционально)" },
@@ -344,6 +349,10 @@ export async function eventsRoutes(app: FastifyInstance) {
     const event = eventRepo.create(body);
     await eventRepo.save(event);
     const telegram = event.publishToTelegram ? await notifyEventCreated(event) : null;
+    if (event.publishToInternalChannel) {
+      const result = await sendInternalEvent(event);
+      if (result.msgId) { event.internalMsgId = result.msgId; await eventRepo.save(event); }
+    }
     return reply.status(201).send({ ...event, telegram });
   });
 
@@ -379,9 +388,18 @@ export async function eventsRoutes(app: FastifyInstance) {
     if (!event) return reply.status(404).send({ message: "Not found" });
     const body = request.body as Partial<Event>;
     const wasPublished = event.publishToTelegram;
+    const hadInternal = !!event.internalMsgId;
     eventRepo.merge(event, body);
     await eventRepo.save(event);
     const telegram = !wasPublished && event.publishToTelegram ? await notifyEventCreated(event) : null;
+    if (event.publishToInternalChannel) {
+      if (hadInternal && event.internalMsgId) {
+        await updateInternalEvent({ ...event, internalMsgId: event.internalMsgId });
+      } else if (!hadInternal) {
+        const result = await sendInternalEvent(event);
+        if (result.msgId) { event.internalMsgId = result.msgId; await eventRepo.save(event); }
+      }
+    }
     return { ...event, telegram };
   });
 

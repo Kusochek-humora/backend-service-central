@@ -88,6 +88,144 @@ export async function notifyBlogCreated(post: {
   return sendTelegram(chatId, lines, post.photo);
 }
 
+async function readFileBuffer(filePath: string): Promise<Buffer | null> {
+  try {
+    const relativePath = filePath.startsWith("/uploads/") ? filePath.slice("/uploads/".length) : filePath;
+    return await fs.readFile(path.join(UPLOAD_DIR, relativePath));
+  } catch {
+    return null;
+  }
+}
+
+async function sendDocument(chatId: string, buffer: Buffer, filename: string, caption?: string): Promise<{ ok: boolean; result?: { message_id: number } }> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const api = `https://api.telegram.org/bot${token}`;
+  const formData = new FormData();
+  formData.append("chat_id", chatId);
+  formData.append("document", new Blob([new Uint8Array(buffer)], { type: "image/webp" }), filename);
+  if (caption) formData.append("caption", caption);
+  const res = await fetch(`${api}/sendDocument`, { method: "POST", body: formData });
+  return res.json() as Promise<{ ok: boolean; result?: { message_id: number } }>;
+}
+
+async function editDocument(chatId: string, messageId: string, buffer: Buffer, filename: string, caption: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const api = `https://api.telegram.org/bot${token}`;
+  const formData = new FormData();
+  formData.append("chat_id", chatId);
+  formData.append("message_id", messageId);
+  formData.append("media", JSON.stringify({ type: "document", media: "attach://file", caption }));
+  formData.append("file", new Blob([new Uint8Array(buffer)], { type: "image/webp" }), filename);
+  await fetch(`${api}/editMessageMedia`, { method: "POST", body: formData });
+}
+
+export async function sendInternalEvent(event: {
+  id: number; title: string; date: string; time: string;
+  photo: string; photoStories?: string;
+}): Promise<{ msgId?: string; error?: string }> {
+  const chatId = process.env.INTERNAL_CHANNEL_ID;
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!chatId || !token) return { error: "INTERNAL_CHANNEL_ID or TELEGRAM_BOT_TOKEN not set" };
+
+  const caption = `${event.date} ${event.title}\n🕐 ${event.time.slice(0, 5)}`;
+
+  try {
+    const postBuf = await readFileBuffer(event.photo);
+    if (!postBuf) return { error: "photo file not found" };
+
+    const postFilename = `${event.date}_${event.title}_пост.webp`;
+    const sent = await sendDocument(chatId, postBuf, postFilename, caption);
+    if (!sent.ok) return { error: "failed to send post document" };
+
+    if (event.photoStories) {
+      const storiesBuf = await readFileBuffer(event.photoStories);
+      if (storiesBuf) {
+        const storiesFilename = `${event.date}_${event.title}_сториз.webp`;
+        await sendDocument(chatId, storiesBuf, storiesFilename);
+      }
+    }
+
+    return { msgId: String(sent.result!.message_id) };
+  } catch (e) {
+    return { error: String(e) };
+  }
+}
+
+export async function updateInternalEvent(event: {
+  title: string; date: string; time: string;
+  photo: string; photoStories?: string; internalMsgId: string;
+}): Promise<void> {
+  const chatId = process.env.INTERNAL_CHANNEL_ID;
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!chatId || !token) return;
+
+  const caption = `${event.date} ${event.title}\n🕐 ${event.time.slice(0, 5)}\n\n📝 обновлена фотка`;
+
+  try {
+    const postBuf = await readFileBuffer(event.photo);
+    if (!postBuf) return;
+    const postFilename = `${event.date}_${event.title}_пост.webp`;
+    await editDocument(chatId, event.internalMsgId, postBuf, postFilename, caption);
+  } catch { /* silent */ }
+}
+
+export async function sendInternalTour(tour: {
+  id: number; title: string; photo: string; photoStories?: string;
+}, shows: { date: string; time: string; city: string; venue: string }[]): Promise<{ msgId?: string; error?: string }> {
+  const chatId = process.env.INTERNAL_CHANNEL_ID;
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!chatId || !token) return { error: "INTERNAL_CHANNEL_ID or TELEGRAM_BOT_TOKEN not set" };
+
+  const showLines = shows
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((s) => `📍 ${s.date} ${s.time.slice(0, 5)} — ${s.city}, ${s.venue}`)
+    .join("\n");
+
+  const caption = [`🎭 ${tour.title}`, ``, showLines].join("\n");
+
+  try {
+    const postBuf = await readFileBuffer(tour.photo);
+    if (!postBuf) return { error: "photo file not found" };
+
+    const postFilename = `${tour.title}_пост.webp`;
+    const sent = await sendDocument(chatId, postBuf, postFilename, caption);
+    if (!sent.ok) return { error: "failed to send post document" };
+
+    if (tour.photoStories) {
+      const storiesBuf = await readFileBuffer(tour.photoStories);
+      if (storiesBuf) {
+        await sendDocument(chatId, storiesBuf, `${tour.title}_сториз.webp`);
+      }
+    }
+
+    return { msgId: String(sent.result!.message_id) };
+  } catch (e) {
+    return { error: String(e) };
+  }
+}
+
+export async function updateInternalTour(tour: {
+  title: string; photo: string; photoStories?: string; internalMsgId: string;
+}, shows: { date: string; time: string; city: string; venue: string }[]): Promise<void> {
+  const chatId = process.env.INTERNAL_CHANNEL_ID;
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!chatId || !token) return;
+
+  const showLines = shows
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((s) => `📍 ${s.date} ${s.time.slice(0, 5)} — ${s.city}, ${s.venue}`)
+    .join("\n");
+
+  const caption = [`🎭 ${tour.title}`, ``, showLines, ``, `📝 обновлена фотка`].join("\n");
+
+  try {
+    const postBuf = await readFileBuffer(tour.photo);
+    if (!postBuf) return;
+    const postFilename = `${tour.title}_пост.webp`;
+    await editDocument(chatId, tour.internalMsgId, postBuf, postFilename, caption);
+  } catch { /* silent */ }
+}
+
 export async function notifyMerchOrder(order: {
   id: number; name: string; phone: string;
   socialLink?: string; comment?: string;

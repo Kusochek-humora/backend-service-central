@@ -3,6 +3,7 @@ import { AppDataSource } from "../../db/data-source";
 import { Tour, TourShow } from "../../db/entities/tour.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
+import { sendInternalTour, updateInternalTour } from "../../utils/telegram";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -35,6 +36,9 @@ const tourSchema = {
     photo: { type: "string" },
     isPublished: { type: "boolean" },
     order: { type: "number" },
+    photoStories: { type: ["string", "null"] },
+    publishToInternalChannel: { type: "boolean" },
+    internalMsgId: { type: ["string", "null"] },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
   },
@@ -57,6 +61,8 @@ const tourBodyProperties = {
   photo: { type: "string" },
   isPublished: { type: "boolean" },
   order: { type: "number" },
+  photoStories: { type: "string", description: "URL афиши для сториз (опционально)" },
+  publishToInternalChannel: { type: "boolean", description: "Отправить афишу в канал для персонала" },
 };
 
 const showBodyProperties = {
@@ -218,6 +224,11 @@ export async function toursRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const tour = tourRepo.create(request.body as Partial<Tour>);
     await tourRepo.save(tour);
+    if (tour.publishToInternalChannel) {
+      const shows = await showRepo.findBy({ tourId: tour.id });
+      const result = await sendInternalTour(tour, shows);
+      if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
+    }
     return reply.status(201).send(tour);
   });
 
@@ -239,8 +250,18 @@ export async function toursRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const tour = await tourRepo.findOneBy({ id: Number(id) });
     if (!tour) return reply.status(404).send({ message: "Not found" });
+    const hadInternal = !!tour.internalMsgId;
     tourRepo.merge(tour, request.body as Partial<Tour>);
     await tourRepo.save(tour);
+    const shows = await showRepo.findBy({ tourId: tour.id });
+    if (tour.publishToInternalChannel) {
+      if (hadInternal && tour.internalMsgId) {
+        await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+      } else if (!hadInternal) {
+        const result = await sendInternalTour(tour, shows);
+        if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
+      }
+    }
     return tour;
   });
 
@@ -289,6 +310,10 @@ export async function toursRoutes(app: FastifyInstance) {
     if (!tour) return reply.status(404).send({ message: "Tour not found" });
     const show = showRepo.create({ ...request.body as Partial<TourShow>, tourId: Number(tourId) });
     await showRepo.save(show);
+    if (tour.internalMsgId) {
+      const shows = await showRepo.findBy({ tourId: tour.id });
+      await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+    }
     return reply.status(201).send(show);
   });
 
@@ -312,6 +337,11 @@ export async function toursRoutes(app: FastifyInstance) {
     if (!show) return reply.status(404).send({ message: "Not found" });
     showRepo.merge(show, request.body as Partial<TourShow>);
     await showRepo.save(show);
+    const tour = await tourRepo.findOneBy({ id: Number(tourId) });
+    if (tour?.internalMsgId) {
+      const shows = await showRepo.findBy({ tourId: tour.id });
+      await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+    }
     return show;
   });
 
@@ -333,6 +363,11 @@ export async function toursRoutes(app: FastifyInstance) {
     const show = await showRepo.findOneBy({ id: Number(id), tourId: Number(tourId) });
     if (!show) return reply.status(404).send({ message: "Not found" });
     await showRepo.remove(show);
+    const tour = await tourRepo.findOneBy({ id: Number(tourId) });
+    if (tour?.internalMsgId) {
+      const shows = await showRepo.findBy({ tourId: tour.id });
+      await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+    }
     return { message: "Deleted" };
   });
 }
