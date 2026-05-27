@@ -53,6 +53,9 @@ export class Event {
   @Column({ default: false })
   isOnMainPage!: boolean;
 
+  @Column({ default: false })
+  publishToTelegram!: boolean;
+
   @Column({ nullable: true })
   notion?: string;
 

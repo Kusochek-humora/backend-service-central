@@ -3,6 +3,7 @@ import { AppDataSource } from "../../db/data-source";
 import { MerchCategory, MerchItem, MerchOrder } from "../../db/entities/merch.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
+import { notifyMerchOrder } from "../../utils/telegram";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -52,37 +53,6 @@ const orderItemSchema = {
   },
 };
 
-async function sendTelegramNotification(order: MerchOrder) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_MERCH;
-  if (!token || !chatId) return;
-
-  const itemLines = order.items
-    .map((i) => `— ${i.name}${i.size ? `, размер ${i.size}` : ""}, ${i.quantity} шт. — ${i.price} ₸`)
-    .join("\n");
-
-  const text = [
-    `🛍 Новый заказ #${order.id}`,
-    ``,
-    `Имя: ${order.name}`,
-    `Телефон: ${order.phone}`,
-    order.socialLink ? `Соцсеть: ${order.socialLink}` : null,
-    order.comment ? `Комментарий: ${order.comment}` : null,
-    ``,
-    `Товары:`,
-    itemLines,
-    ``,
-    `Итого: ${order.totalPrice} ₸`,
-  ]
-    .filter((l) => l !== null)
-    .join("\n");
-
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text }),
-  }).catch(() => {});
-}
 
 export async function merchRoutes(app: FastifyInstance) {
   const categoryRepo = AppDataSource.getRepository(MerchCategory);
@@ -195,7 +165,7 @@ export async function merchRoutes(app: FastifyInstance) {
     const body = request.body as Partial<MerchOrder>;
     const order = orderRepo.create(body);
     await orderRepo.save(order);
-    await sendTelegramNotification(order);
+    await notifyMerchOrder(order);
     return reply.status(201).send({ id: order.id, message: "Order placed" });
   });
 

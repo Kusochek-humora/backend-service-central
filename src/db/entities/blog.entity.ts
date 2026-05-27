@@ -59,6 +59,9 @@ export class BlogPost {
   @Column({ default: false })
   isOnMainPage!: boolean;
 
+  @Column({ default: false })
+  publishToTelegram!: boolean;
+
   @Column({ nullable: true, type: "timestamp" })
   publishedAt?: Date;
 

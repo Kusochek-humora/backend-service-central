@@ -4,6 +4,7 @@ import { Event, Hall, Language } from "../../db/entities/event.entity";
 import { Between, FindOptionsWhere } from "typeorm";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
+import { notifyEventCreated } from "../../utils/telegram";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -20,6 +21,7 @@ const eventSchema = {
     time: { type: "string", description: "HH:MM" },
     isDonation: { type: "boolean" },
     isOnMainPage: { type: "boolean" },
+    publishToTelegram: { type: "boolean" },
     notion: { type: ["string", "null"] },
     description: { type: ["string", "null"] },
     comedians: { type: ["string", "null"] },
@@ -48,6 +50,7 @@ const eventProperties = {
   time: { type: "string", description: "HH:MM" },
   isDonation: { type: "boolean", description: "Мероприятие по донейшену" },
   isOnMainPage: { type: "boolean", description: "Показывать на главной" },
+  publishToTelegram: { type: "boolean", description: "Опубликовать анонс в Telegram канал" },
   notion: { type: "string", description: "Краткое описание (опционально)" },
   description: { type: "string", description: "Полное описание (опционально)" },
   comedians: { type: "string", description: "Участники (опционально)" },
@@ -332,6 +335,7 @@ export async function eventsRoutes(app: FastifyInstance) {
     const body = request.body as Partial<Event>;
     const event = eventRepo.create(body);
     await eventRepo.save(event);
+    if (event.publishToTelegram) await notifyEventCreated(event);
     return reply.status(201).send(event);
   });
 
@@ -360,8 +364,10 @@ export async function eventsRoutes(app: FastifyInstance) {
     const event = await eventRepo.findOneBy({ id: Number(id) });
     if (!event) return reply.status(404).send({ message: "Not found" });
     const body = request.body as Partial<Event>;
+    const wasPublished = event.publishToTelegram;
     eventRepo.merge(event, body);
     await eventRepo.save(event);
+    if (!wasPublished && event.publishToTelegram) await notifyEventCreated(event);
     return event;
   });
 

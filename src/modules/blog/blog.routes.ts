@@ -3,6 +3,7 @@ import { AppDataSource } from "../../db/data-source";
 import { BlogPost } from "../../db/entities/blog.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
+import { notifyBlogCreated } from "../../utils/telegram";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -32,6 +33,7 @@ const blogListItemSchema = {
     links: { type: ["array", "null"], items: linkSchema },
     isPublished: { type: "boolean" },
     isOnMainPage: { type: "boolean" },
+    publishToTelegram: { type: "boolean" },
     publishedAt: { type: ["string", "null"] },
     order: { type: "number" },
     createdAt: { type: "string" },
@@ -79,6 +81,7 @@ const bodyProperties = {
   },
   isPublished: { type: "boolean" },
   isOnMainPage: { type: "boolean" },
+  publishToTelegram: { type: "boolean", description: "Опубликовать анонс в Telegram канал" },
   publishedAt: { type: "string", format: "date-time" },
   order: { type: "number" },
 };
@@ -241,6 +244,7 @@ export async function blogRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const post = repo.create(request.body as Partial<BlogPost>);
     await repo.save(post);
+    if (post.publishToTelegram) await notifyBlogCreated(post);
     return reply.status(201).send(post);
   });
 
@@ -264,8 +268,10 @@ export async function blogRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const post = await repo.findOneBy({ id: Number(id) });
     if (!post) return reply.status(404).send({ message: "Not found" });
+    const wasPublished = post.publishToTelegram;
     repo.merge(post, request.body as Partial<BlogPost>);
     await repo.save(post);
+    if (!wasPublished && post.publishToTelegram) await notifyBlogCreated(post);
     return post;
   });
 
