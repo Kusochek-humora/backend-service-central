@@ -136,7 +136,7 @@ async function sendMediaGroup(
   });
 
   const res = await fetch(`${api}/sendMediaGroup`, { method: "POST", body: formData });
-  return res.json() as Promise<{ ok: boolean; result?: { message_id: number }[] }>;
+  return res.json() as Promise<{ ok: boolean; description?: string; result?: { message_id: number; chat?: unknown }[] }>;
 }
 
 async function editDocument(chatId: string, messageId: string, buffer: Buffer, filename: string, caption: string): Promise<void> {
@@ -178,12 +178,12 @@ export async function sendInternalEvent(event: {
 
     if (files.length > 1) {
       const sent = await sendMediaGroup(chatId, files);
-      if (!sent.ok || !sent.result?.[0]) return { error: "failed to send media group" };
+      if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
       return { msgId: String(sent.result[0].message_id) };
     }
 
-    const sent = await sendDocument(chatId, postBuf, postFilename, caption);
-    if (!sent.ok) return { error: "failed to send post document" };
+    const sent = await sendDocument(chatId, postBuf, postFilename, caption) as any;
+    if (!sent.ok) return { error: sent.description ?? "failed to send post document" };
     return { msgId: String(sent.result!.message_id) };
   } catch (e) {
     return { error: String(e) };
