@@ -51,6 +51,9 @@ export class Event {
   isDonation!: boolean;
 
   @Column({ default: false })
+  isSoldOut!: boolean;
+
+  @Column({ default: false })
   isOnMainPage!: boolean;
 
   @Column({ default: false })
