@@ -170,9 +170,13 @@ export async function merchRoutes(app: FastifyInstance) {
   });
 
   // ADMIN — категории
+  const err401 = { type: "object", properties: { message: { type: "string" } } };
+  const err403 = { type: "object", properties: { message: { type: "string" } } };
+  const err404 = { type: "object", properties: { message: { type: "string" } } };
+
   app.get("/admin/merch/categories", {
     schema: { tags: ["Merch Admin"], summary: "Все категории", ...bearerAuth,
-      response: { 200: { type: "array", items: categorySchema } } },
+      response: { 200: { type: "array", items: categorySchema }, 401: err401, 403: err403 } },
     onRequest: [jwtGuard, requirePermission(Section.MERCH)],
   }, async () => categoryRepo.find({ order: { order: "ASC" } }));
 
@@ -180,7 +184,7 @@ export async function merchRoutes(app: FastifyInstance) {
     schema: { tags: ["Merch Admin"], summary: "Создать категорию", ...bearerAuth,
       body: { type: "object", required: ["name_ru", "name_kz"],
         properties: { name_ru: { type: "string" }, name_kz: { type: "string" }, name_en: { type: "string" }, order: { type: "number" } } },
-      response: { 201: categorySchema } },
+      response: { 201: categorySchema, 401: err401, 403: err403 } },
     onRequest: [jwtGuard, requirePermission(Section.MERCH)],
   }, async (request, reply) => {
     const cat = categoryRepo.create(request.body as Partial<MerchCategory>);
@@ -192,7 +196,7 @@ export async function merchRoutes(app: FastifyInstance) {
     schema: { tags: ["Merch Admin"], summary: "Обновить категорию", ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
       body: { type: "object", properties: { name_ru: { type: "string" }, name_kz: { type: "string" }, name_en: { type: "string" }, order: { type: "number" } } },
-      response: { 200: categorySchema, 404: { type: "object", properties: { message: { type: "string" } } } } },
+      response: { 200: categorySchema, 401: err401, 403: err403, 404: err404 } },
     onRequest: [jwtGuard, requirePermission(Section.MERCH)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
@@ -206,7 +210,7 @@ export async function merchRoutes(app: FastifyInstance) {
   app.delete("/admin/merch/categories/:id", {
     schema: { tags: ["Merch Admin"], summary: "Удалить категорию", ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
-      response: { 200: { type: "object", properties: { message: { type: "string" } } }, 404: { type: "object", properties: { message: { type: "string" } } } } },
+      response: { 200: { type: "object", properties: { message: { type: "string" } } }, 401: err401, 403: err403, 404: err404 } },
     onRequest: [jwtGuard, requirePermission(Section.MERCH)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
@@ -220,7 +224,7 @@ export async function merchRoutes(app: FastifyInstance) {
   app.get("/admin/merch", {
     schema: { tags: ["Merch Admin"], summary: "Все товары", ...bearerAuth,
       querystring: { type: "object", properties: { categoryId: { type: "number" }, page: { type: "number" }, limit: { type: "number" } } },
-      response: { 200: { type: "object", properties: { data: { type: "array", items: itemSchema }, total: { type: "number" }, page: { type: "number" }, limit: { type: "number" }, pages: { type: "number" } } } } },
+      response: { 200: { type: "object", properties: { data: { type: "array", items: itemSchema }, total: { type: "number" }, page: { type: "number" }, limit: { type: "number" }, pages: { type: "number" } } }, 401: err401, 403: err403 } },
     onRequest: [jwtGuard, requirePermission(Section.MERCH)],
   }, async (request) => {
     const { categoryId, page = 1, limit = 20 } = request.query as { categoryId?: number; page?: number; limit?: number };
@@ -239,12 +243,12 @@ export async function merchRoutes(app: FastifyInstance) {
           price: { type: "number" }, discount: { type: "number" }, photo: { type: "string" },
           photos: { type: "array", items: { type: "string" } }, sizes: { type: "array", items: { type: "string" } },
           isAvailable: { type: "boolean" }, order: { type: "number" }, categoryId: { type: "number" } } },
-      response: { 201: itemSchema } },
+      response: { 201: itemSchema, 401: err401, 403: err403 } },
     onRequest: [jwtGuard, requirePermission(Section.MERCH)],
   }, async (request, reply) => {
     const item = itemRepo.create(request.body as Partial<MerchItem>);
     await itemRepo.save(item);
-    const saved = await itemRepo.findOneBy({ id: item.id });
+    const saved = await itemRepo.findOne({ where: { id: item.id }, relations: { category: true } });
     return reply.status(201).send(saved);
   });
 
@@ -256,7 +260,7 @@ export async function merchRoutes(app: FastifyInstance) {
           price: { type: "number" }, discount: { type: "number" }, photo: { type: "string" },
           photos: { type: "array", items: { type: "string" } }, sizes: { type: "array", items: { type: "string" } },
           isAvailable: { type: "boolean" }, order: { type: "number" }, categoryId: { type: "number" } } },
-      response: { 200: itemSchema, 404: { type: "object", properties: { message: { type: "string" } } } } },
+      response: { 200: itemSchema, 401: err401, 403: err403, 404: err404 } },
     onRequest: [jwtGuard, requirePermission(Section.MERCH)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
@@ -264,14 +268,13 @@ export async function merchRoutes(app: FastifyInstance) {
     if (!item) return reply.status(404).send({ message: "Not found" });
     itemRepo.merge(item, request.body as Partial<MerchItem>);
     await itemRepo.save(item);
-    const saved = await itemRepo.findOneBy({ id: item.id });
-    return saved;
+    return itemRepo.findOne({ where: { id: item.id }, relations: { category: true } });
   });
 
   app.delete("/admin/merch/:id", {
     schema: { tags: ["Merch Admin"], summary: "Удалить товар", ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
-      response: { 200: { type: "object", properties: { message: { type: "string" } } }, 404: { type: "object", properties: { message: { type: "string" } } } } },
+      response: { 200: { type: "object", properties: { message: { type: "string" } } }, 401: err401, 403: err403, 404: err404 } },
     onRequest: [jwtGuard, requirePermission(Section.MERCH)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
@@ -285,7 +288,7 @@ export async function merchRoutes(app: FastifyInstance) {
   app.get("/admin/merch/orders", {
     schema: { tags: ["Merch Admin"], summary: "Все заказы", ...bearerAuth,
       querystring: { type: "object", properties: { page: { type: "number" }, limit: { type: "number" } } },
-      response: { 200: { type: "object", properties: {
+      response: { 401: err401, 403: err403, 200: { type: "object", properties: {
         data: { type: "array", items: { type: "object", properties: {
           id: { type: "number" }, name: { type: "string" }, phone: { type: "string" },
           socialLink: { type: ["string", "null"] }, comment: { type: ["string", "null"] },

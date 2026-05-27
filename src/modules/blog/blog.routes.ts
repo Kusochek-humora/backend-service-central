@@ -33,10 +33,17 @@ const blogListItemSchema = {
     links: { type: ["array", "null"], items: linkSchema },
     isPublished: { type: "boolean" },
     isOnMainPage: { type: "boolean" },
-    publishToTelegram: { type: "boolean" },
     publishedAt: { type: ["string", "null"] },
     order: { type: "number" },
     createdAt: { type: "string" },
+  },
+};
+
+const blogAdminListItemSchema = {
+  type: "object",
+  properties: {
+    ...blogListItemSchema.properties,
+    publishToTelegram: { type: "boolean" },
   },
 };
 
@@ -189,7 +196,7 @@ export async function blogRoutes(app: FastifyInstance) {
         200: {
           type: "object",
           properties: {
-            data: { type: "array", items: blogListItemSchema },
+            data: { type: "array", items: blogAdminListItemSchema },
             ...paginationMeta,
           },
         },
@@ -207,7 +214,7 @@ export async function blogRoutes(app: FastifyInstance) {
       .select(["p.id", "p.title_ru", "p.title_kz", "p.title_en",
                "p.excerpt_ru", "p.excerpt_kz", "p.excerpt_en",
                "p.photo", "p.videoUrl", "p.mainLink", "p.links",
-               "p.isPublished", "p.isOnMainPage", "p.publishedAt", "p.order", "p.createdAt"]);
+               "p.isPublished", "p.isOnMainPage", "p.publishToTelegram", "p.publishedAt", "p.order", "p.createdAt"]);
 
     if (year) qb.andWhere("EXTRACT(YEAR FROM COALESCE(p.publishedAt, p.createdAt)) = :year", { year });
     if (month) qb.andWhere("EXTRACT(MONTH FROM COALESCE(p.publishedAt, p.createdAt)) = :month", { month });
