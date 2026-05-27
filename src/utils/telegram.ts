@@ -107,7 +107,8 @@ async function sendDocument(chatId: string, buffer: Buffer, filename: string, ca
   const api = `https://api.telegram.org/bot${token}`;
   const formData = new FormData();
   formData.append("chat_id", chatId);
-  formData.append("document", new Blob([new Uint8Array(buffer)], { type: "image/webp" }), filename);
+  formData.append("document", new Blob([new Uint8Array(buffer)], { type: "application/octet-stream" }), filename);
+  formData.append("disable_content_type_detection", "true");
   if (caption) formData.append("caption", caption);
   const res = await fetch(`${api}/sendDocument`, { method: "POST", body: formData });
   return res.json() as Promise<{ ok: boolean; result?: { message_id: number } }>;
