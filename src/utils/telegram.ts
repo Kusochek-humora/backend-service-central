@@ -1,4 +1,8 @@
+import fs from "fs/promises";
+import path from "path";
+
 const BASE_URL = "https://test-standup.ru";
+const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 
 export type TelegramResult = { sent: boolean; response?: unknown; error?: string };
 
@@ -10,21 +14,33 @@ async function sendTelegram(chatId: string, text: string, photoUrl?: string): Pr
   const api = `https://api.telegram.org/bot${token}`;
 
   try {
-    let res: Response;
     if (photoUrl) {
-      const fullPhotoUrl = photoUrl.startsWith("http") ? photoUrl : `${BASE_URL}${photoUrl}`;
-      res = await fetch(`${api}/sendPhoto`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, photo: fullPhotoUrl, caption: text }),
-      });
-    } else {
-      res = await fetch(`${api}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text }),
-      });
+      const relativePath = photoUrl.startsWith("/uploads/")
+        ? photoUrl.slice("/uploads/".length)
+        : photoUrl;
+      const filePath = path.join(UPLOAD_DIR, relativePath);
+
+      try {
+        const fileBuffer = await fs.readFile(filePath);
+        const formData = new FormData();
+        formData.append("chat_id", chatId);
+        formData.append("caption", text);
+        formData.append("photo", new Blob([fileBuffer], { type: "image/webp" }), path.basename(filePath));
+
+        const res = await fetch(`${api}/sendPhoto`, { method: "POST", body: formData });
+        const json = await res.json();
+        if (res.ok) return { sent: true, response: json };
+        return sendTelegram(chatId, text);
+      } catch {
+        return sendTelegram(chatId, text);
+      }
     }
+
+    const res = await fetch(`${api}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
     const json = await res.json();
     return { sent: res.ok, response: json };
   } catch (e) {
