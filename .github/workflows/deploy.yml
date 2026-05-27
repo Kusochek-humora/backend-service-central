@@ -17,16 +17,28 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: DB_USER,DB_PASSWORD,DB_NAME,JWT_SECRET
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
           script: |
+            sudo apt-get install -y docker-compose-plugin
             mkdir -p ~/backups
             cd ~/backend-service-central
             git pull
+            printf "DB_USER=%s\nDB_PASSWORD=%s\nDB_NAME=%s\nDB_HOST=db\nJWT_SECRET=%s\nNODE_ENV=production\n" \
+              "$DB_USER" "$DB_PASSWORD" "$DB_NAME" "$JWT_SECRET" > .env
             sudo ufw allow 3000/tcp
-            sudo docker-compose up -d db
-            sudo docker-compose build app
-            sudo docker-compose up -d --no-deps app
+            sudo docker compose up -d db
+            sleep 5
+            sudo docker compose exec -T db psql -U postgres -c "ALTER USER \"${DB_USER}\" PASSWORD '${DB_PASSWORD}';"
+            sudo docker compose build app
+            sudo docker compose stop app
+            sudo docker compose rm -f app
+            sudo docker compose up -d --no-deps app
             sleep 10
-            sudo docker-compose exec -T app npm run migration:run:prod
-            sudo docker-compose exec -T app node dist/db/seeds/create-chief-editor.js
-            sudo docker-compose logs db
-            sudo docker-compose logs app
+            sudo docker compose exec -T app npm run migration:run:prod
+            sudo docker compose exec -T app node dist/db/seeds/create-chief-editor.js
+            sudo docker compose logs db
+            sudo docker compose logs app
