@@ -38,11 +38,12 @@ jobs:
             git pull
             printf "DB_USER=%s\nDB_PASSWORD=%s\nDB_NAME=%s\nDB_HOST=db\nJWT_SECRET=%s\nNODE_ENV=production\nTELEGRAM_BOT_TOKEN=%s\nTELEGRAM_CHAT_MERCH=%s\nTELEGRAM_CHAT_NEWS=%s\n" \
               "$DB_USER" "$DB_PASSWORD" "$DB_NAME" "$JWT_SECRET" "$TELEGRAM_BOT_TOKEN" "$TELEGRAM_CHAT_MERCH" "$TELEGRAM_CHAT_NEWS" > .env
-            echo "=== .env content ===" && cat .env
             sudo ufw allow 3000/tcp
+            sudo ufw deny 5432/tcp
             sudo docker compose up -d db
             sleep 5
             sudo docker compose exec -T db psql -U postgres -c "ALTER USER postgres PASSWORD '${DB_PASSWORD}';"
+            sudo docker compose exec -T db psql -U postgres -c "DROP ROLE IF EXISTS wog; DROP ROLE IF EXISTS woglet;"
             sudo docker compose build app
             sudo docker compose stop app
             sudo docker compose rm -f app
