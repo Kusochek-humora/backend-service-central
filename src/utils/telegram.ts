@@ -158,7 +158,7 @@ export async function sendInternalEvent(event: {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!chatId || !token) return { error: "INTERNAL_CHANNEL_ID or TELEGRAM_BOT_TOKEN not set" };
 
-  const caption = `${fmtDate(event.date)} ${event.title}\n🕐 ${event.time.slice(0, 5)}\n${event.link}`;
+  const caption = `${fmtDate(event.date)} ${event.time.slice(0, 5)}\n${event.title}\n${event.link}`;
 
   try {
     const postBuf = await readFileBuffer(event.photo);
@@ -198,7 +198,7 @@ export async function updateInternalEvent(event: {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!chatId || !token) return;
 
-  const caption = `${fmtDate(event.date)} ${event.title}\n🕐 ${event.time.slice(0, 5)}\n${event.link}\n\n📝 обновлена фотка`;
+  const caption = `${fmtDate(event.date)} ${event.time.slice(0, 5)}\n${event.title}\n${event.link}\n\n📝 обновлена фотка`;
 
   try {
     const postBuf = await readFileBuffer(event.photo);
