@@ -85,6 +85,64 @@ export async function uploadRoutes(app: FastifyInstance) {
     return { url };
   });
 
+  app.post("/admin/upload/:folder/bulk", {
+    schema: {
+      tags: ["Upload"],
+      summary: "Загрузить несколько изображений (макс. 10)",
+      security: [{ bearerAuth: [] }],
+      consumes: ["multipart/form-data"],
+      params: {
+        type: "object",
+        properties: {
+          folder: { type: "string", enum: FOLDERS as unknown as string[] },
+        },
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            urls: { type: "array", items: { type: "string" } },
+          },
+        },
+        400: { type: "object", properties: { message: { type: "string" } } },
+        401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+    onRequest: async (request, reply) => {
+      try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
+    },
+  }, async (request, reply) => {
+    const { folder } = request.params as { folder: Folder };
+    if (!FOLDERS.includes(folder)) return reply.status(400).send({ message: "Invalid folder" });
+
+    await requirePermission(folder as Section)(request, reply);
+    if (reply.sent) return;
+
+    const parts = request.files();
+    const urls: string[] = [];
+    let count = 0;
+
+    for await (const file of parts) {
+      if (count >= 10) break;
+
+      if (!ALLOWED_MIME.includes(file.mimetype)) continue;
+
+      const buffer = await file.toBuffer();
+      if (buffer.length > MAX_FILE_SIZE) continue;
+
+      const filename = `${randomUUID()}.webp`;
+      const filepath = path.join(UPLOAD_DIR, folder, filename);
+      await sharp(buffer).webp({ quality: 85 }).toFile(filepath);
+      urls.push(`/uploads/${folder}/${filename}`);
+      count++;
+    }
+
+    if (urls.length === 0) return reply.status(400).send({ message: "No valid files provided" });
+
+    return { urls };
+  });
+
   const jwtGuard = async (request: any, reply: any) => {
     try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
   };
@@ -112,7 +170,7 @@ export async function uploadRoutes(app: FastifyInstance) {
           type: "object",
           properties: {
             folder: { type: "string" },
-            data: { type: "array", items: { type: "string" } },
+            data: { type: "array", items: { type: "string" }, description: "Имена файлов. Полный путь: /uploads/{folder}/{filename}" },
             total: { type: "number" },
             page: { type: "number" },
             limit: { type: "number" },
