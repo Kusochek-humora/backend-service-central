@@ -88,6 +88,11 @@ export async function notifyBlogCreated(post: {
   return sendTelegram(chatId, lines, post.photo);
 }
 
+function fmtDate(date: string): string {
+  const [, m, d] = date.split("-");
+  return `${d}.${m}`;
+}
+
 async function readFileBuffer(filePath: string): Promise<Buffer | null> {
   try {
     const relativePath = filePath.startsWith("/uploads/") ? filePath.slice("/uploads/".length) : filePath;
@@ -121,13 +126,13 @@ async function editDocument(chatId: string, messageId: string, buffer: Buffer, f
 
 export async function sendInternalEvent(event: {
   id: number; title: string; date: string; time: string;
-  photo: string; photoStories?: string;
+  photo: string; photoStories?: string; link: string;
 }): Promise<{ msgId?: string; error?: string }> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!chatId || !token) return { error: "INTERNAL_CHANNEL_ID or TELEGRAM_BOT_TOKEN not set" };
 
-  const caption = `${event.date} ${event.title}\n🕐 ${event.time.slice(0, 5)}`;
+  const caption = `${fmtDate(event.date)} ${event.title}\n🕐 ${event.time.slice(0, 5)}\n${event.link}`;
 
   try {
     const postBuf = await readFileBuffer(event.photo);
@@ -153,13 +158,13 @@ export async function sendInternalEvent(event: {
 
 export async function updateInternalEvent(event: {
   title: string; date: string; time: string;
-  photo: string; photoStories?: string; internalMsgId: string;
+  photo: string; photoStories?: string; internalMsgId: string; link: string;
 }): Promise<void> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!chatId || !token) return;
 
-  const caption = `${event.date} ${event.title}\n🕐 ${event.time.slice(0, 5)}\n\n📝 обновлена фотка`;
+  const caption = `${fmtDate(event.date)} ${event.title}\n🕐 ${event.time.slice(0, 5)}\n${event.link}\n\n📝 обновлена фотка`;
 
   try {
     const postBuf = await readFileBuffer(event.photo);
@@ -171,14 +176,14 @@ export async function updateInternalEvent(event: {
 
 export async function sendInternalTour(tour: {
   id: number; title: string; photo: string; photoStories?: string;
-}, shows: { date: string; time: string; city: string; venue: string }[]): Promise<{ msgId?: string; error?: string }> {
+}, shows: { date: string; time: string; city: string; venue: string; link: string }[]): Promise<{ msgId?: string; error?: string }> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!chatId || !token) return { error: "INTERNAL_CHANNEL_ID or TELEGRAM_BOT_TOKEN not set" };
 
   const showLines = shows
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((s) => `📍 ${s.date} ${s.time.slice(0, 5)} — ${s.city}, ${s.venue}`)
+    .map((s) => `📍 ${fmtDate(s.date)} ${s.time.slice(0, 5)} — ${s.city}, ${s.venue}\n${s.link}`)
     .join("\n");
 
   const caption = [`🎭 ${tour.title}`, ``, showLines].join("\n");
@@ -206,14 +211,14 @@ export async function sendInternalTour(tour: {
 
 export async function updateInternalTour(tour: {
   title: string; photo: string; photoStories?: string; internalMsgId: string;
-}, shows: { date: string; time: string; city: string; venue: string }[]): Promise<void> {
+}, shows: { date: string; time: string; city: string; venue: string; link: string }[]): Promise<void> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!chatId || !token) return;
 
   const showLines = shows
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((s) => `📍 ${s.date} ${s.time.slice(0, 5)} — ${s.city}, ${s.venue}`)
+    .map((s) => `📍 ${fmtDate(s.date)} ${s.time.slice(0, 5)} — ${s.city}, ${s.venue}\n${s.link}`)
     .join("\n");
 
   const caption = [`🎭 ${tour.title}`, ``, showLines, ``, `📝 обновлена фотка`].join("\n");
