@@ -139,6 +139,61 @@ export async function uploadRoutes(app: FastifyInstance) {
     return { folder, data, total, page, limit, pages: Math.ceil(total / limit) };
   });
 
+  app.delete("/admin/uploads/:folder", {
+    schema: {
+      tags: ["Upload"],
+      summary: "Удалить несколько файлов из папки",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          folder: { type: "string", enum: FOLDERS as unknown as string[] },
+        },
+      },
+      body: {
+        type: "object",
+        required: ["filenames"],
+        properties: {
+          filenames: { type: "array", items: { type: "string" }, minItems: 1 },
+        },
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            deleted: { type: "array", items: { type: "string" } },
+            notFound: { type: "array", items: { type: "string" } },
+          },
+        },
+        400: { type: "object", properties: { message: { type: "string" } } },
+        401: { type: "object", properties: { message: { type: "string" } } },
+        403: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+    onRequest: [jwtGuard, requirePermission(Section.FILES)],
+  }, async (request, reply) => {
+    const { folder } = request.params as { folder: Folder };
+    if (!FOLDERS.includes(folder)) return reply.status(400).send({ message: "Invalid folder" });
+
+    const { filenames } = request.body as { filenames: string[] };
+
+    const deleted: string[] = [];
+    const notFound: string[] = [];
+
+    for (const filename of filenames) {
+      if (filename.includes("..") || filename.includes("/")) continue;
+      const filepath = path.join(UPLOAD_DIR, folder, filename);
+      try {
+        await fs.unlink(filepath);
+        deleted.push(filename);
+      } catch {
+        notFound.push(filename);
+      }
+    }
+
+    return { deleted, notFound };
+  });
+
   app.delete("/admin/uploads/:folder/:filename", {
     schema: {
       tags: ["Upload"],
