@@ -13,17 +13,23 @@ jobs:
     steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: DB_USER,DB_PASSWORD,DB_NAME,JWT_SECRET
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
           script: |
-            sudo apt-get install -y docker-compose-plugin
+            if ! docker compose version > /dev/null 2>&1; then
+              sudo mkdir -p /usr/local/lib/docker/cli-plugins
+              sudo curl -fsSL "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-x86_64" \
+                -o /usr/local/lib/docker/cli-plugins/docker-compose
+              sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+            fi
             mkdir -p ~/backups
             cd ~/backend-service-central
             git pull
@@ -32,7 +38,7 @@ jobs:
             sudo ufw allow 3000/tcp
             sudo docker compose up -d db
             sleep 5
-            sudo docker compose exec -T db psql -U postgres -c "ALTER USER \"${DB_USER}\" PASSWORD '${DB_PASSWORD}';"
+            sudo docker compose exec -T db psql -U postgres -c "ALTER USER postgres PASSWORD '${DB_PASSWORD}';"
             sudo docker compose build app
             sudo docker compose stop app
             sudo docker compose rm -f app
