@@ -114,6 +114,31 @@ async function sendDocument(chatId: string, buffer: Buffer, filename: string, ca
   return res.json() as Promise<{ ok: boolean; result?: { message_id: number } }>;
 }
 
+async function sendMediaGroup(
+  chatId: string,
+  files: { buffer: Buffer; filename: string; caption?: string }[]
+): Promise<{ ok: boolean; result?: { message_id: number }[] }> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const api = `https://api.telegram.org/bot${token}`;
+  const formData = new FormData();
+  formData.append("chat_id", chatId);
+
+  const media = files.map((file, i) => ({
+    type: "document",
+    media: `attach://file${i}`,
+    disable_content_type_detection: true,
+    ...(file.caption ? { caption: file.caption } : {}),
+  }));
+
+  formData.append("media", JSON.stringify(media));
+  files.forEach((file, i) => {
+    formData.append(`file${i}`, new Blob([new Uint8Array(file.buffer)], { type: "application/octet-stream" }), file.filename);
+  });
+
+  const res = await fetch(`${api}/sendMediaGroup`, { method: "POST", body: formData });
+  return res.json() as Promise<{ ok: boolean; result?: { message_id: number }[] }>;
+}
+
 async function editDocument(chatId: string, messageId: string, buffer: Buffer, filename: string, caption: string): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const api = `https://api.telegram.org/bot${token}`;
@@ -140,17 +165,25 @@ export async function sendInternalEvent(event: {
     if (!postBuf) return { error: "photo file not found" };
 
     const postFilename = `${event.date}_${event.title}_пост.webp`;
-    const sent = await sendDocument(chatId, postBuf, postFilename, caption);
-    if (!sent.ok) return { error: "failed to send post document" };
+    const files: { buffer: Buffer; filename: string; caption?: string }[] = [
+      { buffer: postBuf, filename: postFilename, caption },
+    ];
 
     if (event.photoStories) {
       const storiesBuf = await readFileBuffer(event.photoStories);
       if (storiesBuf) {
-        const storiesFilename = `${event.date}_${event.title}_сториз.webp`;
-        await sendDocument(chatId, storiesBuf, storiesFilename);
+        files.push({ buffer: storiesBuf, filename: `${event.date}_${event.title}_сториз.webp` });
       }
     }
 
+    if (files.length > 1) {
+      const sent = await sendMediaGroup(chatId, files);
+      if (!sent.ok || !sent.result?.[0]) return { error: "failed to send media group" };
+      return { msgId: String(sent.result[0].message_id) };
+    }
+
+    const sent = await sendDocument(chatId, postBuf, postFilename, caption);
+    if (!sent.ok) return { error: "failed to send post document" };
     return { msgId: String(sent.result!.message_id) };
   } catch (e) {
     return { error: String(e) };
@@ -194,16 +227,25 @@ export async function sendInternalTour(tour: {
     if (!postBuf) return { error: "photo file not found" };
 
     const postFilename = `${tour.title}_пост.webp`;
-    const sent = await sendDocument(chatId, postBuf, postFilename, caption);
-    if (!sent.ok) return { error: "failed to send post document" };
+    const files: { buffer: Buffer; filename: string; caption?: string }[] = [
+      { buffer: postBuf, filename: postFilename, caption },
+    ];
 
     if (tour.photoStories) {
       const storiesBuf = await readFileBuffer(tour.photoStories);
       if (storiesBuf) {
-        await sendDocument(chatId, storiesBuf, `${tour.title}_сториз.webp`);
+        files.push({ buffer: storiesBuf, filename: `${tour.title}_сториз.webp` });
       }
     }
 
+    if (files.length > 1) {
+      const sent = await sendMediaGroup(chatId, files);
+      if (!sent.ok || !sent.result?.[0]) return { error: "failed to send media group" };
+      return { msgId: String(sent.result[0].message_id) };
+    }
+
+    const sent = await sendDocument(chatId, postBuf, postFilename, caption);
+    if (!sent.ok) return { error: "failed to send post document" };
     return { msgId: String(sent.result!.message_id) };
   } catch (e) {
     return { error: String(e) };
