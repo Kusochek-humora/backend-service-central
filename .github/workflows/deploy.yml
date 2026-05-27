@@ -21,11 +21,15 @@ jobs:
             mkdir -p ~/backups
             cd ~/backend-service-central
             git pull
-            printf 'PORT=3000\nHOST=0.0.0.0\nNODE_ENV=production\nDB_HOST=db\nDB_PORT=5432\nDB_USER=${{ secrets.DB_USER }}\nDB_PASSWORD=${{ secrets.DB_PASSWORD }}\nDB_NAME=${{ secrets.DB_NAME }}\nJWT_SECRET=${{ secrets.JWT_SECRET }}\n' > .env
+            if [ ! -f .env ]; then
+              printf 'PORT=3000\nHOST=0.0.0.0\nNODE_ENV=production\nDB_HOST=db\nDB_PORT=5432\nDB_USER=${{ secrets.DB_USER }}\nDB_PASSWORD=${{ secrets.DB_PASSWORD }}\nDB_NAME=${{ secrets.DB_NAME }}\nJWT_SECRET=${{ secrets.JWT_SECRET }}\n' > .env
+            fi
             sudo ufw allow 3000/tcp
             sudo docker-compose down
+            sudo docker volume rm backend-service-central_pgdata || true
             sudo docker-compose up -d --build
             sleep 10
             sudo docker-compose exec -T app npm run migration:run:prod
             sudo docker-compose exec -T app node dist/db/seeds/create-chief-editor.js
+            sudo docker-compose logs db
             sudo docker-compose logs app
