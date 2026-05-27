@@ -17,6 +17,13 @@ type Folder = typeof FOLDERS[number];
 export async function uploadRoutes(app: FastifyInstance) {
   await app.register(multipart, { limits: { fileSize: MAX_FILE_SIZE } });
 
+  app.setErrorHandler((error: { statusCode?: number; code?: string }, _request, reply) => {
+    if (error.statusCode === 413 || error.code === "FST_REQ_FILE_TOO_LARGE") {
+      return reply.status(413).send({ message: "Файл слишком большой. Максимум 5MB" });
+    }
+    reply.send(error);
+  });
+
   for (const folder of FOLDERS) {
     await fs.mkdir(path.join(UPLOAD_DIR, folder), { recursive: true });
   }
@@ -120,23 +127,37 @@ export async function uploadRoutes(app: FastifyInstance) {
     if (reply.sent) return;
 
     const parts = request.files();
-    const urls: string[] = [];
-    let count = 0;
+    const buffers: Buffer[] = [];
 
     for await (const file of parts) {
-      if (count >= 10) break;
-
-      if (!ALLOWED_MIME.includes(file.mimetype)) continue;
-
-      const buffer = await file.toBuffer();
-      if (buffer.length > MAX_FILE_SIZE) continue;
-
-      const filename = `${randomUUID()}.webp`;
-      const filepath = path.join(UPLOAD_DIR, folder, filename);
-      await sharp(buffer).webp({ quality: 85 }).toFile(filepath);
-      urls.push(`/uploads/${folder}/${filename}`);
-      count++;
+      if (buffers.length >= 10) {
+        file.file.resume();
+        continue;
+      }
+      if (!ALLOWED_MIME.includes(file.mimetype)) {
+        file.file.resume();
+        continue;
+      }
+      try {
+        const buffer = await file.toBuffer();
+        if (buffer.length <= MAX_FILE_SIZE) buffers.push(buffer);
+      } catch { /* skip unreadable files */ }
     }
+
+    if (buffers.length === 0) return reply.status(400).send({ message: "No valid files provided" });
+
+    const results = await Promise.allSettled(
+      buffers.map(async (buffer) => {
+        const filename = `${randomUUID()}.webp`;
+        const filepath = path.join(UPLOAD_DIR, folder, filename);
+        await sharp(buffer).webp({ quality: 85 }).toFile(filepath);
+        return `/uploads/${folder}/${filename}`;
+      })
+    );
+
+    const urls = results
+      .filter((r): r is PromiseFulfilledResult<string> => r.status === "fulfilled")
+      .map((r) => r.value);
 
     if (urls.length === 0) return reply.status(400).send({ message: "No valid files provided" });
 
