@@ -16,6 +16,7 @@ import fastifyStatic from "@fastify/static";
 import path from "path";
 import { categoriesRoutes } from "./modules/events/categories.routes";
 import { menuRoutes } from "./modules/menu/menu.routes";
+import { blogRoutes } from "./modules/blog/blog.routes";
 
 const app = fastify({ logger: true });
 
@@ -68,6 +69,7 @@ const start = async () => {
     app.register(eventsRoutes);
     app.register(uploadRoutes);
     app.register(menuRoutes);
+    app.register(blogRoutes);
     app.register(fastifyStatic, {
       root: path.join(process.cwd(), "uploads"),
       prefix: "/uploads/",
