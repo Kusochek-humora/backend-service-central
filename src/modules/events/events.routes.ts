@@ -349,11 +349,13 @@ export async function eventsRoutes(app: FastifyInstance) {
     const event = eventRepo.create(body);
     await eventRepo.save(event);
     const telegram = event.publishToTelegram ? await notifyEventCreated(event) : null;
+    let internalChannel = null;
     if (event.publishToInternalChannel) {
       const result = await sendInternalEvent(event);
+      internalChannel = result;
       if (result.msgId) { event.internalMsgId = result.msgId; await eventRepo.save(event); }
     }
-    return reply.status(201).send({ ...event, telegram });
+    return reply.status(201).send({ ...event, telegram, internalChannel });
   });
 
   app.put("/admin/events/:id", {
@@ -392,15 +394,17 @@ export async function eventsRoutes(app: FastifyInstance) {
     eventRepo.merge(event, body);
     await eventRepo.save(event);
     const telegram = !wasPublished && event.publishToTelegram ? await notifyEventCreated(event) : null;
+    let internalChannel = null;
     if (event.publishToInternalChannel) {
       if (hadInternal && event.internalMsgId) {
         await updateInternalEvent({ ...event, internalMsgId: event.internalMsgId });
       } else if (!hadInternal) {
         const result = await sendInternalEvent(event);
+        internalChannel = result;
         if (result.msgId) { event.internalMsgId = result.msgId; await eventRepo.save(event); }
       }
     }
-    return { ...event, telegram };
+    return { ...event, telegram, internalChannel };
   });
 
   app.delete("/admin/events/:id", {

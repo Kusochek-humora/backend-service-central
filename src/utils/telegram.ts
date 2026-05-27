@@ -217,10 +217,10 @@ export async function sendInternalTour(tour: {
 
   const showLines = shows
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((s) => `📍 ${fmtDate(s.date)} ${s.time.slice(0, 5)} — ${s.city}, ${s.venue}\n${s.link}`)
-    .join("\n");
+    .map((s) => `${fmtDate(s.date)} ${s.time.slice(0, 5)}\n${s.city}\n${s.link}`)
+    .join("\n\n");
 
-  const caption = [`🎭 ${tour.title}`, ``, showLines].join("\n");
+  const caption = [`${tour.title}`, ``, showLines].join("\n");
 
   try {
     const postBuf = await readFileBuffer(tour.photo);
@@ -261,10 +261,10 @@ export async function updateInternalTour(tour: {
 
   const showLines = shows
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((s) => `📍 ${fmtDate(s.date)} ${s.time.slice(0, 5)} — ${s.city}, ${s.venue}\n${s.link}`)
-    .join("\n");
+    .map((s) => `${fmtDate(s.date)} ${s.time.slice(0, 5)}\n${s.city}\n${s.link}`)
+    .join("\n\n");
 
-  const caption = [`🎭 ${tour.title}`, ``, showLines, ``, `📝 обновлена фотка`].join("\n");
+  const caption = [`${tour.title}`, ``, showLines, ``, `📝 обновлена фотка`].join("\n");
 
   try {
     const postBuf = await readFileBuffer(tour.photo);
