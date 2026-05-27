@@ -178,7 +178,7 @@ export async function sendInternalEvent(event: {
 
     if (files.length > 1) {
       const sent = await sendMediaGroup(chatId, files);
-      if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
+      if (!sent.ok || !sent.result?.[0]) return { error: JSON.stringify(sent) };
       return { msgId: String(sent.result[0].message_id) };
     }
 
