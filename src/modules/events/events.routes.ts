@@ -332,6 +332,7 @@ export async function eventsRoutes(app: FastifyInstance) {
           properties: {
             ...eventSchema.properties,
             telegram: { type: "object", nullable: true, additionalProperties: true },
+            internalChannel: { type: "object", nullable: true, additionalProperties: true },
           },
         },
         401: { type: "object", properties: { message: { type: "string" } } },
@@ -371,6 +372,7 @@ export async function eventsRoutes(app: FastifyInstance) {
           properties: {
             ...eventSchema.properties,
             telegram: { type: "object", nullable: true, additionalProperties: true },
+            internalChannel: { type: "object", nullable: true, additionalProperties: true },
           },
         },
         401: { type: "object", properties: { message: { type: "string" } } },
