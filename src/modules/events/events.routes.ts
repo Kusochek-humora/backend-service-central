@@ -320,7 +320,13 @@ export async function eventsRoutes(app: FastifyInstance) {
       ...bearerAuth,
       body: bodySchema,
       response: {
-        201: eventSchema,
+        201: {
+          type: "object",
+          properties: {
+            ...eventSchema.properties,
+            telegram: { type: "object", nullable: true, additionalProperties: true },
+          },
+        },
         401: { type: "object", properties: { message: { type: "string" } } },
         403: { type: "object", properties: { message: { type: "string" } } },
       },
@@ -335,8 +341,8 @@ export async function eventsRoutes(app: FastifyInstance) {
     const body = request.body as Partial<Event>;
     const event = eventRepo.create(body);
     await eventRepo.save(event);
-    if (event.publishToTelegram) await notifyEventCreated(event);
-    return reply.status(201).send(event);
+    const telegram = event.publishToTelegram ? await notifyEventCreated(event) : null;
+    return reply.status(201).send({ ...event, telegram });
   });
 
   app.put("/admin/events/:id", {
@@ -347,7 +353,13 @@ export async function eventsRoutes(app: FastifyInstance) {
       params: { type: "object", properties: { id: { type: "number" } } },
       body: updateBodySchema,
       response: {
-        200: eventSchema,
+        200: {
+          type: "object",
+          properties: {
+            ...eventSchema.properties,
+            telegram: { type: "object", nullable: true, additionalProperties: true },
+          },
+        },
         401: { type: "object", properties: { message: { type: "string" } } },
         403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
@@ -367,8 +379,8 @@ export async function eventsRoutes(app: FastifyInstance) {
     const wasPublished = event.publishToTelegram;
     eventRepo.merge(event, body);
     await eventRepo.save(event);
-    if (!wasPublished && event.publishToTelegram) await notifyEventCreated(event);
-    return event;
+    const telegram = !wasPublished && event.publishToTelegram ? await notifyEventCreated(event) : null;
+    return { ...event, telegram };
   });
 
   app.delete("/admin/events/:id", {

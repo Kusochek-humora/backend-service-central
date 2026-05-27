@@ -235,7 +235,13 @@ export async function blogRoutes(app: FastifyInstance) {
         properties: bodyProperties,
       },
       response: {
-        201: blogFullSchema,
+        201: {
+          type: "object",
+          properties: {
+            ...blogFullSchema.properties,
+            telegram: { type: "object", nullable: true, additionalProperties: true },
+          },
+        },
         401: { type: "object", properties: { message: { type: "string" } } },
         403: { type: "object", properties: { message: { type: "string" } } },
       },
@@ -244,8 +250,8 @@ export async function blogRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const post = repo.create(request.body as Partial<BlogPost>);
     await repo.save(post);
-    if (post.publishToTelegram) await notifyBlogCreated(post);
-    return reply.status(201).send(post);
+    const telegram = post.publishToTelegram ? await notifyBlogCreated(post) : null;
+    return reply.status(201).send({ ...post, telegram });
   });
 
   // ADMIN — обновить
@@ -257,7 +263,13 @@ export async function blogRoutes(app: FastifyInstance) {
       params: { type: "object", properties: { id: { type: "number" } } },
       body: { type: "object", properties: bodyProperties },
       response: {
-        200: blogFullSchema,
+        200: {
+          type: "object",
+          properties: {
+            ...blogFullSchema.properties,
+            telegram: { type: "object", nullable: true, additionalProperties: true },
+          },
+        },
         401: { type: "object", properties: { message: { type: "string" } } },
         403: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
@@ -271,8 +283,8 @@ export async function blogRoutes(app: FastifyInstance) {
     const wasPublished = post.publishToTelegram;
     repo.merge(post, request.body as Partial<BlogPost>);
     await repo.save(post);
-    if (!wasPublished && post.publishToTelegram) await notifyBlogCreated(post);
-    return post;
+    const telegram = !wasPublished && post.publishToTelegram ? await notifyBlogCreated(post) : null;
+    return { ...post, telegram };
   });
 
   // ADMIN — удалить
