@@ -126,11 +126,11 @@ async function sendMediaGroup(
   const formData = new FormData();
   formData.append("chat_id", chatId);
   formData.append("media", JSON.stringify([
-    { type: "document", media: "attach://stories", disable_content_type_detection: true },
-    { type: "document", media: "attach://post", caption: post.caption, disable_content_type_detection: true },
+    { type: "document", media: "attach://file0" },
+    { type: "document", media: "attach://file1", caption: post.caption },
   ]));
-  formData.append("stories", new Blob([new Uint8Array(stories.buffer)], { type: "application/octet-stream" }), stories.filename);
-  formData.append("post", new Blob([new Uint8Array(post.buffer)], { type: "application/octet-stream" }), post.filename);
+  formData.append("file0", new Blob([new Uint8Array(stories.buffer)], { type: "application/octet-stream" }), stories.filename);
+  formData.append("file1", new Blob([new Uint8Array(post.buffer)], { type: "application/octet-stream" }), post.filename);
 
   const res = await fetch(`${api}/sendMediaGroup`, { method: "POST", body: formData });
   return res.json() as Promise<{ ok: boolean; description?: string; result?: { message_id: number }[] }>;
