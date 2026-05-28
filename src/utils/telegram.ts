@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import https from "https";
 import path from "path";
+import sharp from "sharp";
 
 const BASE_URL = "https://test-standup.ru";
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
@@ -122,6 +123,12 @@ async function sendMediaGroup(
   stories: { buffer: Buffer; filename: string },
 ): Promise<{ ok: boolean; description?: string; result?: { message_id: number }[] }> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
+
+  const [storiesJpg, postJpg] = await Promise.all([
+    sharp(stories.buffer).jpeg({ quality: 85 }).toBuffer(),
+    sharp(post.buffer).jpeg({ quality: 85 }).toBuffer(),
+  ]);
+
   const boundary = `----TGBoundary${Date.now()}`;
   const mediaJson = JSON.stringify([
     { type: "document", media: "attach://file0" },
@@ -131,10 +138,10 @@ async function sendMediaGroup(
   const body = Buffer.concat([
     Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${chatId}\r\n`),
     Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="media"\r\n\r\n${mediaJson}\r\n`),
-    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file0"; filename="${stories.filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`),
-    stories.buffer,
-    Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="file1"; filename="${post.filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`),
-    post.buffer,
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file0"; filename="stories.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`),
+    storiesJpg,
+    Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="file1"; filename="post.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`),
+    postJpg,
     Buffer.from(`\r\n--${boundary}--\r\n`),
   ]);
 
