@@ -75,7 +75,10 @@ export async function seoRoutes(app: FastifyInstance) {
         required: ["page"],
         properties: { page: { type: "string" }, ...seoBodyProperties },
       },
-      response: { 201: seoSchema },
+      response: {
+        201: seoSchema,
+        409: { type: "object", properties: { message: { type: "string" } } },
+      },
     },
     onRequest: [jwtGuard, requirePermission(Section.SEO)],
   }, async (request, reply) => {
