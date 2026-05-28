@@ -332,7 +332,6 @@ export async function eventsRoutes(app: FastifyInstance) {
           properties: {
             ...eventSchema.properties,
             telegram: { type: "object", nullable: true, additionalProperties: true },
-            internalChannel: { type: "object", nullable: true, additionalProperties: true },
           },
         },
         401: { type: "object", properties: { message: { type: "string" } } },
@@ -350,13 +349,11 @@ export async function eventsRoutes(app: FastifyInstance) {
     const event = eventRepo.create(body);
     await eventRepo.save(event);
     const telegram = event.publishToTelegram ? await notifyEventCreated(event) : null;
-    let internalChannel = null;
     if (event.publishToInternalChannel) {
       const result = await sendInternalEvent(event);
-      internalChannel = result;
       if (result.msgId) { event.internalMsgId = result.msgId; await eventRepo.save(event); }
     }
-    return reply.status(201).send({ ...event, telegram, internalChannel });
+    return reply.status(201).send({ ...event, telegram });
   });
 
   app.put("/admin/events/:id", {

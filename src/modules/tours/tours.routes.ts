@@ -3,7 +3,7 @@ import { AppDataSource } from "../../db/data-source";
 import { Tour, TourShow } from "../../db/entities/tour.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
-import { sendInternalTour, updateInternalTour, sendInternalShow, updateInternalShow, deleteMessage } from "../../utils/telegram";
+import { sendInternalShow, updateInternalShow, deleteMessage } from "../../utils/telegram";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -227,11 +227,6 @@ export async function toursRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const tour = tourRepo.create(request.body as Partial<Tour>);
     await tourRepo.save(tour);
-    if (tour.publishToInternalChannel) {
-      const shows = await showRepo.findBy({ tourId: tour.id });
-      const result = await sendInternalTour(tour, shows);
-      if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
-    }
     return reply.status(201).send(tour);
   });
 
@@ -253,19 +248,8 @@ export async function toursRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const tour = await tourRepo.findOneBy({ id: Number(id) });
     if (!tour) return reply.status(404).send({ message: "Not found" });
-    const hadInternal = !!tour.internalMsgId;
     tourRepo.merge(tour, request.body as Partial<Tour>);
     await tourRepo.save(tour);
-    const shows = await showRepo.findBy({ tourId: tour.id });
-    if (tour.publishToInternalChannel) {
-      if (hadInternal && tour.internalMsgId) {
-        const result = await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
-        if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
-      } else if (!hadInternal) {
-        const result = await sendInternalTour(tour, shows);
-        if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
-      }
-    }
     return tour;
   });
 
