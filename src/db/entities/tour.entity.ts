@@ -69,6 +69,9 @@ export class TourShow {
   @Column({ nullable: true })
   notice?: string;
 
+  @Column({ nullable: true, type: "bigint" })
+  internalMsgId?: string;
+
   @Column({ default: false })
   isSoldOut!: boolean;
 

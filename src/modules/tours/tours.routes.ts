@@ -3,7 +3,7 @@ import { AppDataSource } from "../../db/data-source";
 import { Tour, TourShow } from "../../db/entities/tour.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
-import { sendInternalTour, updateInternalTour } from "../../utils/telegram";
+import { sendInternalTour, updateInternalTour, sendInternalShow, updateInternalShow, deleteMessage } from "../../utils/telegram";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -22,6 +22,7 @@ const showSchema = {
     isPublished: { type: "boolean" },
     order: { type: "number" },
     tourId: { type: "number" },
+    internalMsgId: { type: ["string", "null"] },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
   },
@@ -311,9 +312,9 @@ export async function toursRoutes(app: FastifyInstance) {
     if (!tour) return reply.status(404).send({ message: "Tour not found" });
     const show = showRepo.create({ ...request.body as Partial<TourShow>, tourId: Number(tourId) });
     await showRepo.save(show);
-    if (tour.internalMsgId) {
-      const shows = await showRepo.findBy({ tourId: tour.id });
-      await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+    if (tour.publishToInternalChannel) {
+      const result = await sendInternalShow(tour, show);
+      if (result.msgId) { show.internalMsgId = result.msgId; await showRepo.save(show); }
     }
     return reply.status(201).send(show);
   });
@@ -339,10 +340,14 @@ export async function toursRoutes(app: FastifyInstance) {
     showRepo.merge(show, request.body as Partial<TourShow>);
     await showRepo.save(show);
     const tour = await tourRepo.findOneBy({ id: Number(tourId) });
-    if (tour?.internalMsgId) {
-      const shows = await showRepo.findBy({ tourId: tour.id });
-      const result = await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
-      if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
+    if (tour?.publishToInternalChannel) {
+      if (show.internalMsgId) {
+        const result = await updateInternalShow(tour, { ...show, internalMsgId: show.internalMsgId });
+        if (result.msgId) { show.internalMsgId = result.msgId; await showRepo.save(show); }
+      } else {
+        const result = await sendInternalShow(tour, show);
+        if (result.msgId) { show.internalMsgId = result.msgId; await showRepo.save(show); }
+      }
     }
     return show;
   });
@@ -364,13 +369,12 @@ export async function toursRoutes(app: FastifyInstance) {
     const { tourId, id } = request.params as { tourId: string; id: string };
     const show = await showRepo.findOneBy({ id: Number(id), tourId: Number(tourId) });
     if (!show) return reply.status(404).send({ message: "Not found" });
-    await showRepo.remove(show);
-    const tour = await tourRepo.findOneBy({ id: Number(tourId) });
-    if (tour?.internalMsgId) {
-      const shows = await showRepo.findBy({ tourId: tour.id });
-      const result = await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
-      if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
+    if (show.internalMsgId) {
+      const chatId = process.env.INTERNAL_CHANNEL_ID!;
+      await deleteMessage(chatId, show.internalMsgId);
+      await deleteMessage(chatId, String(Number(show.internalMsgId) + 1));
     }
+    await showRepo.remove(show);
     return { message: "Deleted" };
   });
 }

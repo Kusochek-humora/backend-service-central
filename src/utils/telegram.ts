@@ -168,7 +168,7 @@ async function sendMediaGroup(
   });
 }
 
-async function deleteMessage(chatId: string, messageId: string): Promise<void> {
+export async function deleteMessage(chatId: string, messageId: string): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const api = `https://api.telegram.org/bot${token}`;
   await fetch(`${api}/deleteMessage`, {
@@ -227,6 +227,57 @@ export async function updateInternalEvent(event: {
   await deleteMessage(chatId, String(Number(event.internalMsgId) + 1));
 
   return sendInternalEvent(event);
+}
+
+export async function sendInternalShow(
+  tour: { title: string; photo: string; photoStories?: string },
+  show: { date: string; time: string; city: string; link: string },
+): Promise<{ msgId?: string; error?: string }> {
+  const chatId = process.env.INTERNAL_CHANNEL_ID;
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!chatId || !token) return { error: "INTERNAL_CHANNEL_ID or TELEGRAM_BOT_TOKEN not set" };
+
+  const caption = `${tour.title}\n${fmtDate(show.date)} ${show.time.slice(0, 5)}\n${show.city}\n${show.link}`;
+
+  try {
+    const postBuf = await readFileBuffer(tour.photo);
+    if (!postBuf) return { error: "photo file not found" };
+
+    const postFilename = `${show.date}_${tour.title}_пост.webp`;
+
+    if (tour.photoStories) {
+      const storiesBuf = await readFileBuffer(tour.photoStories);
+      if (storiesBuf) {
+        const sent = await sendMediaGroup(
+          chatId,
+          { buffer: postBuf, filename: postFilename, caption },
+          { buffer: storiesBuf, filename: `${show.date}_${tour.title}_сториз.webp` },
+        );
+        if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
+        return { msgId: String(sent.result[0].message_id) };
+      }
+    }
+
+    const sent = await sendDocument(chatId, postBuf, postFilename, caption) as any;
+    if (!sent.ok) return { error: sent.description ?? "failed to send post document" };
+    return { msgId: String(sent.result!.message_id) };
+  } catch (e) {
+    return { error: String(e) };
+  }
+}
+
+export async function updateInternalShow(
+  tour: { title: string; photo: string; photoStories?: string },
+  show: { date: string; time: string; city: string; link: string; internalMsgId: string },
+): Promise<{ msgId?: string }> {
+  const chatId = process.env.INTERNAL_CHANNEL_ID;
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!chatId || !token) return {};
+
+  await deleteMessage(chatId, show.internalMsgId);
+  await deleteMessage(chatId, String(Number(show.internalMsgId) + 1));
+
+  return sendInternalShow(tour, show);
 }
 
 export async function sendInternalTour(tour: {
