@@ -334,6 +334,52 @@ export async function updateInternalTour(tour: {
   return sendInternalTour(tour, shows);
 }
 
+export async function notifyVacancyApply(data: {
+  vacancyTitle: string;
+  name: string;
+  phone: string;
+  message?: string;
+  resumeBuffer?: Buffer;
+  resumeFilename?: string;
+}): Promise<TelegramResult> {
+  const chatId = process.env.TELEGRAM_CHAT_VACANCIES;
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!chatId || !token) return { sent: false, error: "TELEGRAM_CHAT_VACANCIES not set" };
+
+  const lines = [
+    `💼 Новый отклик на вакансию`,
+    ``,
+    `Вакансия: ${data.vacancyTitle}`,
+    `Имя: ${data.name}`,
+    `Телефон: ${data.phone}`,
+    data.message ? `Сообщение: ${data.message}` : null,
+  ].filter((l) => l !== null).join("\n");
+
+  const api = `https://api.telegram.org/bot${token}`;
+
+  try {
+    if (data.resumeBuffer && data.resumeFilename) {
+      const formData = new FormData();
+      formData.append("chat_id", chatId);
+      formData.append("caption", lines);
+      formData.append("document", new Blob([new Uint8Array(data.resumeBuffer)], { type: "application/pdf" }), data.resumeFilename);
+      const res = await fetch(`${api}/sendDocument`, { method: "POST", body: formData });
+      const json = await res.json();
+      return { sent: res.ok, response: json };
+    }
+
+    const res = await fetch(`${api}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: lines }),
+    });
+    const json = await res.json();
+    return { sent: res.ok, response: json };
+  } catch (e) {
+    return { sent: false, error: String(e) };
+  }
+}
+
 export async function notifyMerchOrder(order: {
   id: number; name: string; phone: string;
   socialLink?: string; comment?: string;

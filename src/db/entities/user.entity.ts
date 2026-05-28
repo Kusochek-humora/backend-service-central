@@ -21,6 +21,8 @@ export enum Section {
   MERCH = "merch",
   CATEGORIES = "categories",
   FILES = "files",
+  RULES = "rules",
+  VACANCIES = "vacancies",
 }
 
 @Entity("users")
