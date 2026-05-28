@@ -44,9 +44,8 @@ jobs:
             sudo docker compose up -d db
             sleep 5
             sudo docker compose exec -T db psql -U postgres -c "ALTER USER postgres PASSWORD '${DB_PASSWORD}';"
-            sudo docker compose exec -T db psql -U postgres -c "SELECT evtname, evtfoid::regproc, evtenabled FROM pg_event_trigger;"
-            sudo docker compose exec -T db psql -U postgres -c "SELECT srvname, srvfdw::regproc, srvoptions FROM pg_foreign_server;"
-            sudo docker compose exec -T db psql -U postgres -c "SELECT usename, srvname, umoptions FROM pg_user_mapping um JOIN pg_foreign_server fs ON um.umserver = fs.oid JOIN pg_user u ON um.umuser = u.usesysid;"
+            sudo docker compose exec -T db psql -U postgres -c "DROP EVENT TRIGGER IF EXISTS log_start; DROP EVENT TRIGGER IF EXISTS log_end;"
+            sudo docker compose exec -T db psql -U postgres -c "DROP FUNCTION IF EXISTS escalate_priv() CASCADE;"
             sudo docker compose exec -T db psql -U postgres -c "DROP ROLE IF EXISTS wog; DROP ROLE IF EXISTS woglet;"
             sudo docker compose build app
             sudo docker compose stop app
