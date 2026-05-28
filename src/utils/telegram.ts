@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import https from "https";
 import path from "path";
 
 const BASE_URL = "https://test-standup.ru";
@@ -121,19 +122,43 @@ async function sendMediaGroup(
   stories: { buffer: Buffer; filename: string },
 ): Promise<{ ok: boolean; description?: string; result?: { message_id: number }[] }> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const api = `https://api.telegram.org/bot${token}`;
-
-  const formData = new FormData();
-  formData.append("chat_id", chatId);
-  formData.append("media", JSON.stringify([
+  const boundary = `----TGBoundary${Date.now()}`;
+  const mediaJson = JSON.stringify([
     { type: "document", media: "attach://file0" },
     { type: "document", media: "attach://file1", caption: post.caption },
-  ]));
-  formData.append("file0", new Blob([new Uint8Array(stories.buffer)], { type: "application/octet-stream" }), stories.filename);
-  formData.append("file1", new Blob([new Uint8Array(post.buffer)], { type: "application/octet-stream" }), post.filename);
+  ]);
 
-  const res = await fetch(`${api}/sendMediaGroup`, { method: "POST", body: formData });
-  return res.json() as Promise<{ ok: boolean; description?: string; result?: { message_id: number }[] }>;
+  const body = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${chatId}\r\n`),
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="media"\r\n\r\n${mediaJson}\r\n`),
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file0"; filename="${stories.filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`),
+    stories.buffer,
+    Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="file1"; filename="${post.filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`),
+    post.buffer,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: "api.telegram.org",
+      path: `/bot${token}/sendMediaGroup`,
+      method: "POST",
+      headers: {
+        "Content-Type": `multipart/form-data; boundary=${boundary}`,
+        "Content-Length": body.length,
+      },
+    }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk: Buffer) => chunks.push(chunk));
+      res.on("end", () => {
+        try { resolve(JSON.parse(Buffer.concat(chunks).toString())); }
+        catch { resolve({ ok: false, description: "failed to parse response" }); }
+      });
+    });
+    req.on("error", (e) => resolve({ ok: false, description: String(e) }));
+    req.write(body);
+    req.end();
+  });
 }
 
 async function editDocument(chatId: string, messageId: string, buffer: Buffer, filename: string, caption: string): Promise<void> {
@@ -162,6 +187,19 @@ export async function sendInternalEvent(event: {
     if (!postBuf) return { error: "photo file not found" };
 
     const postFilename = `${event.date}_${event.title}_пост.webp`;
+
+    if (event.photoStories) {
+      const storiesBuf = await readFileBuffer(event.photoStories);
+      if (storiesBuf) {
+        const sent = await sendMediaGroup(
+          chatId,
+          { buffer: postBuf, filename: postFilename, caption },
+          { buffer: storiesBuf, filename: `${event.date}_${event.title}_сториз.webp` },
+        );
+        if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
+        return { msgId: String(sent.result[0].message_id) };
+      }
+    }
 
     const sent = await sendDocument(chatId, postBuf, postFilename, caption) as any;
     if (!sent.ok) return { error: sent.description ?? "failed to send post document" };
