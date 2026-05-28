@@ -163,19 +163,6 @@ export async function sendInternalEvent(event: {
 
     const postFilename = `${event.date}_${event.title}_пост.webp`;
 
-    if (event.photoStories) {
-      const storiesBuf = await readFileBuffer(event.photoStories);
-      if (storiesBuf) {
-        const sent = await sendMediaGroup(
-          chatId,
-          { buffer: postBuf, filename: postFilename, caption },
-          { buffer: storiesBuf, filename: `${event.date}_${event.title}_сториз.webp` },
-        );
-        if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
-        return { msgId: String(sent.result[0].message_id) };
-      }
-    }
-
     const sent = await sendDocument(chatId, postBuf, postFilename, caption) as any;
     if (!sent.ok) return { error: sent.description ?? "failed to send post document" };
     return { msgId: String(sent.result!.message_id) };
