@@ -20,9 +20,10 @@ const showSchema = {
     notice: { type: ["string", "null"] },
     isSoldOut: { type: "boolean" },
     isPublished: { type: "boolean" },
+    publishToInternalChannel: { type: "boolean" },
+    internalMsgId: { type: ["string", "null"] },
     order: { type: "number" },
     tourId: { type: "number" },
-    internalMsgId: { type: ["string", "null"] },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
   },
@@ -76,6 +77,7 @@ const showBodyProperties = {
   notice: { type: "string" },
   isSoldOut: { type: "boolean" },
   isPublished: { type: "boolean" },
+  publishToInternalChannel: { type: "boolean" },
   order: { type: "number" },
 };
 
@@ -312,7 +314,7 @@ export async function toursRoutes(app: FastifyInstance) {
     if (!tour) return reply.status(404).send({ message: "Tour not found" });
     const show = showRepo.create({ ...request.body as Partial<TourShow>, tourId: Number(tourId) });
     await showRepo.save(show);
-    if (tour.publishToInternalChannel) {
+    if (show.publishToInternalChannel) {
       const result = await sendInternalShow(tour, show);
       if (result.msgId) { show.internalMsgId = result.msgId; await showRepo.save(show); }
     }
@@ -340,7 +342,7 @@ export async function toursRoutes(app: FastifyInstance) {
     showRepo.merge(show, request.body as Partial<TourShow>);
     await showRepo.save(show);
     const tour = await tourRepo.findOneBy({ id: Number(tourId) });
-    if (tour?.publishToInternalChannel) {
+    if (show.publishToInternalChannel && tour) {
       if (show.internalMsgId) {
         const result = await updateInternalShow(tour, { ...show, internalMsgId: show.internalMsgId });
         if (result.msgId) { show.internalMsgId = result.msgId; await showRepo.save(show); }

@@ -69,6 +69,9 @@ export class TourShow {
   @Column({ nullable: true })
   notice?: string;
 
+  @Column({ default: false })
+  publishToInternalChannel!: boolean;
+
   @Column({ nullable: true, type: "bigint" })
   internalMsgId?: string;
 
