@@ -256,7 +256,8 @@ export async function toursRoutes(app: FastifyInstance) {
     const shows = await showRepo.findBy({ tourId: tour.id });
     if (tour.publishToInternalChannel) {
       if (hadInternal && tour.internalMsgId) {
-        await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+        const result = await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+        if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
       } else if (!hadInternal) {
         const result = await sendInternalTour(tour, shows);
         if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
@@ -340,7 +341,8 @@ export async function toursRoutes(app: FastifyInstance) {
     const tour = await tourRepo.findOneBy({ id: Number(tourId) });
     if (tour?.internalMsgId) {
       const shows = await showRepo.findBy({ tourId: tour.id });
-      await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+      const result = await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+      if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
     }
     return show;
   });
@@ -366,7 +368,8 @@ export async function toursRoutes(app: FastifyInstance) {
     const tour = await tourRepo.findOneBy({ id: Number(tourId) });
     if (tour?.internalMsgId) {
       const shows = await showRepo.findBy({ tourId: tour.id });
-      await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+      const result = await updateInternalTour({ ...tour, internalMsgId: tour.internalMsgId }, shows);
+      if (result.msgId) { tour.internalMsgId = result.msgId; await tourRepo.save(tour); }
     }
     return { message: "Deleted" };
   });

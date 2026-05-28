@@ -399,7 +399,9 @@ export async function eventsRoutes(app: FastifyInstance) {
     let internalChannel = null;
     if (event.publishToInternalChannel) {
       if (hadInternal && event.internalMsgId) {
-        await updateInternalEvent({ ...event, internalMsgId: event.internalMsgId });
+        const result = await updateInternalEvent({ ...event, internalMsgId: event.internalMsgId });
+        internalChannel = result;
+        if (result.msgId) { event.internalMsgId = result.msgId; await eventRepo.save(event); }
       } else if (!hadInternal) {
         const result = await sendInternalEvent(event);
         internalChannel = result;

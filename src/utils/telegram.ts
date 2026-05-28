@@ -168,15 +168,14 @@ async function sendMediaGroup(
   });
 }
 
-async function editDocument(chatId: string, messageId: string, buffer: Buffer, filename: string, caption: string): Promise<void> {
+async function deleteMessage(chatId: string, messageId: string): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const api = `https://api.telegram.org/bot${token}`;
-  const formData = new FormData();
-  formData.append("chat_id", chatId);
-  formData.append("message_id", messageId);
-  formData.append("media", JSON.stringify({ type: "document", media: "attach://file", caption }));
-  formData.append("file", new Blob([new Uint8Array(buffer)], { type: "image/webp" }), filename);
-  await fetch(`${api}/editMessageMedia`, { method: "POST", body: formData });
+  await fetch(`${api}/deleteMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, message_id: Number(messageId) }),
+  }).catch(() => {});
 }
 
 export async function sendInternalEvent(event: {
@@ -217,21 +216,17 @@ export async function sendInternalEvent(event: {
 }
 
 export async function updateInternalEvent(event: {
-  title: string; date: string; time: string;
+  id: number; title: string; date: string; time: string;
   photo: string; photoStories?: string; internalMsgId: string; link: string;
-}): Promise<void> {
+}): Promise<{ msgId?: string }> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!chatId || !token) return;
+  if (!chatId || !token) return {};
 
-  const caption = `${fmtDate(event.date)} ${event.time.slice(0, 5)}\n${event.title}\n${event.link}\n\n📝 обновлена фотка`;
+  await deleteMessage(chatId, event.internalMsgId);
+  await deleteMessage(chatId, String(Number(event.internalMsgId) + 1));
 
-  try {
-    const postBuf = await readFileBuffer(event.photo);
-    if (!postBuf) return;
-    const postFilename = `${event.date}_${event.title}_пост.webp`;
-    await editDocument(chatId, event.internalMsgId, postBuf, postFilename, caption);
-  } catch { /* silent */ }
+  return sendInternalEvent(event);
 }
 
 export async function sendInternalTour(tour: {
@@ -275,25 +270,16 @@ export async function sendInternalTour(tour: {
 }
 
 export async function updateInternalTour(tour: {
-  title: string; photo: string; photoStories?: string; internalMsgId: string;
-}, shows: { date: string; time: string; city: string; venue: string; link: string }[]): Promise<void> {
+  id: number; title: string; photo: string; photoStories?: string; internalMsgId: string;
+}, shows: { date: string; time: string; city: string; venue: string; link: string }[]): Promise<{ msgId?: string }> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!chatId || !token) return;
+  if (!chatId || !token) return {};
 
-  const showLines = shows
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .map((s) => `${fmtDate(s.date)} ${s.time.slice(0, 5)}\n${s.city}\n${s.link}`)
-    .join("\n\n");
+  await deleteMessage(chatId, tour.internalMsgId);
+  await deleteMessage(chatId, String(Number(tour.internalMsgId) + 1));
 
-  const caption = [`${tour.title}`, ``, showLines, ``, `📝 обновлена фотка`].join("\n");
-
-  try {
-    const postBuf = await readFileBuffer(tour.photo);
-    if (!postBuf) return;
-    const postFilename = `${tour.title}_пост.webp`;
-    await editDocument(chatId, tour.internalMsgId, postBuf, postFilename, caption);
-  } catch { /* silent */ }
+  return sendInternalTour(tour, shows);
 }
 
 export async function notifyMerchOrder(order: {
