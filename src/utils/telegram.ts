@@ -122,28 +122,17 @@ async function sendMediaGroup(
 ): Promise<{ ok: boolean; description?: string; result?: { message_id: number }[] }> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const api = `https://api.telegram.org/bot${token}`;
-  const boundary = `Boundary${Date.now()}`;
-  const mediaJson = JSON.stringify([
-    { type: "document", media: "attach://stories" },
-    { type: "document", media: "attach://post", caption: post.caption },
-  ]);
 
-  const parts: Buffer[] = [
-    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${chatId}\r\n`),
-    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="media"\r\n\r\n${mediaJson}\r\n`),
-    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="stories"; filename="stories.webp"\r\nContent-Type: application/octet-stream\r\n\r\n`),
-    stories.buffer,
-    Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="post"; filename="post.webp"\r\nContent-Type: application/octet-stream\r\n\r\n`),
-    post.buffer,
-    Buffer.from(`\r\n--${boundary}--\r\n`),
-  ];
+  const formData = new FormData();
+  formData.append("chat_id", chatId);
+  formData.append("media", JSON.stringify([
+    { type: "document", media: "attach://stories", disable_content_type_detection: true },
+    { type: "document", media: "attach://post", caption: post.caption, disable_content_type_detection: true },
+  ]));
+  formData.append("stories", new Blob([new Uint8Array(stories.buffer)], { type: "application/octet-stream" }), stories.filename);
+  formData.append("post", new Blob([new Uint8Array(post.buffer)], { type: "application/octet-stream" }), post.filename);
 
-  const body = Buffer.concat(parts);
-  const res = await fetch(`${api}/sendMediaGroup`, {
-    method: "POST",
-    headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
-    body,
-  });
+  const res = await fetch(`${api}/sendMediaGroup`, { method: "POST", body: formData });
   return res.json() as Promise<{ ok: boolean; description?: string; result?: { message_id: number }[] }>;
 }
 
