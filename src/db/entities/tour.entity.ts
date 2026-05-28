@@ -67,6 +67,9 @@ export class TourShow {
   photo?: string;
 
   @Column({ nullable: true })
+  photoStories?: string;
+
+  @Column({ nullable: true })
   notice?: string;
 
   @Column({ default: false })

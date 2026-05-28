@@ -192,7 +192,7 @@ export async function sendInternalEvent(event: {
     const postBuf = await readFileBuffer(event.photo);
     if (!postBuf) return { error: "photo file not found" };
 
-    const postFilename = `${event.date}_${event.title}_пост.webp`;
+    const postFilename = `${event.date}_${event.title}_пост.jpg`;
 
     if (event.photoStories) {
       const storiesBuf = await readFileBuffer(event.photoStories);
@@ -200,7 +200,7 @@ export async function sendInternalEvent(event: {
         const sent = await sendMediaGroup(
           chatId,
           { buffer: postBuf, filename: postFilename, caption },
-          { buffer: storiesBuf, filename: `${event.date}_${event.title}_сториз.webp` },
+          { buffer: storiesBuf, filename: `${event.date}_${event.title}_сториз.jpg` },
         );
         if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
         return { msgId: String(sent.result[0].message_id) };
@@ -230,8 +230,8 @@ export async function updateInternalEvent(event: {
 }
 
 export async function sendInternalShow(
-  tour: { title: string; photo: string; photoStories?: string },
-  show: { date: string; time: string; city: string; link: string },
+  tour: { title: string },
+  show: { date: string; time: string; city: string; link: string; photo?: string; photoStories?: string },
 ): Promise<{ msgId?: string; error?: string }> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -240,18 +240,19 @@ export async function sendInternalShow(
   const caption = `${tour.title}\n${fmtDate(show.date)} ${show.time.slice(0, 5)}\n${show.city}\n${show.link}`;
 
   try {
-    const postBuf = await readFileBuffer(tour.photo);
+    if (!show.photo) return { error: "show photo not set" };
+    const postBuf = await readFileBuffer(show.photo);
     if (!postBuf) return { error: "photo file not found" };
 
-    const postFilename = `${show.date}_${tour.title}_пост.webp`;
+    const postFilename = `${show.date}_${tour.title}_пост.jpg`;
 
-    if (tour.photoStories) {
-      const storiesBuf = await readFileBuffer(tour.photoStories);
+    if (show.photoStories) {
+      const storiesBuf = await readFileBuffer(show.photoStories);
       if (storiesBuf) {
         const sent = await sendMediaGroup(
           chatId,
           { buffer: postBuf, filename: postFilename, caption },
-          { buffer: storiesBuf, filename: `${show.date}_${tour.title}_сториз.webp` },
+          { buffer: storiesBuf, filename: `${show.date}_${tour.title}_сториз.jpg` },
         );
         if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
         return { msgId: String(sent.result[0].message_id) };
@@ -267,8 +268,8 @@ export async function sendInternalShow(
 }
 
 export async function updateInternalShow(
-  tour: { title: string; photo: string; photoStories?: string },
-  show: { date: string; time: string; city: string; link: string; internalMsgId: string },
+  tour: { title: string },
+  show: { date: string; time: string; city: string; link: string; photo?: string; photoStories?: string; internalMsgId: string },
 ): Promise<{ msgId?: string }> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -298,14 +299,14 @@ export async function sendInternalTour(tour: {
     const postBuf = await readFileBuffer(tour.photo);
     if (!postBuf) return { error: "photo file not found" };
 
-    const postFilename = `${tour.title}_пост.webp`;
+    const postFilename = `${tour.title}_пост.jpg`;
     if (tour.photoStories) {
       const storiesBuf = await readFileBuffer(tour.photoStories);
       if (storiesBuf) {
         const sent = await sendMediaGroup(
           chatId,
           { buffer: postBuf, filename: postFilename, caption },
-          { buffer: storiesBuf, filename: `${tour.title}_сториз.webp` },
+          { buffer: storiesBuf, filename: `${tour.title}_сториз.jpg` },
         );
         if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
         return { msgId: String(sent.result[0].message_id) };
