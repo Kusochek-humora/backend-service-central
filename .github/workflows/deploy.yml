@@ -46,6 +46,8 @@ jobs:
             sudo docker compose exec -T db psql -U postgres -c "ALTER USER postgres PASSWORD '${DB_PASSWORD}';"
             sudo docker compose exec -T db psql -U postgres -c "DROP EVENT TRIGGER IF EXISTS log_start; DROP EVENT TRIGGER IF EXISTS log_end;"
             sudo docker compose exec -T db psql -U postgres -c "DROP FUNCTION IF EXISTS escalate_priv() CASCADE;"
+            sudo docker compose exec -T db psql -U postgres -c "REASSIGN OWNED BY wog TO postgres;" || true
+            sudo docker compose exec -T db psql -U postgres -c "DROP OWNED BY wog CASCADE;" || true
             sudo docker compose exec -T db psql -U postgres -c "DROP ROLE IF EXISTS wog; DROP ROLE IF EXISTS woglet;"
             sudo docker compose build app
             sudo docker compose stop app
