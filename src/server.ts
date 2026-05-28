@@ -21,6 +21,8 @@ import { merchRoutes } from "./modules/merch/merch.routes";
 import { toursRoutes } from "./modules/tours/tours.routes";
 import { rulesRoutes } from "./modules/rules/rules.routes";
 import { vacanciesRoutes } from "./modules/vacancies/vacancies.routes";
+import { seoRoutes } from "./modules/seo/seo.routes";
+import { siteInfoRoutes } from "./modules/site-info/site-info.routes";
 
 const app = fastify({ logger: true });
 
@@ -78,6 +80,8 @@ const start = async () => {
     app.register(toursRoutes);
     app.register(rulesRoutes);
     app.register(vacanciesRoutes);
+    app.register(seoRoutes);
+    app.register(siteInfoRoutes);
     app.register(fastifyStatic, {
       root: path.join(process.cwd(), "uploads"),
       prefix: "/uploads/",

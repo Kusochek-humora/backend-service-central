@@ -23,6 +23,8 @@ export enum Section {
   FILES = "files",
   RULES = "rules",
   VACANCIES = "vacancies",
+  SEO = "seo",
+  SITE_INFO = "site_info",
 }
 
 @Entity("users")
