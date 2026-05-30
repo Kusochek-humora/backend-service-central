@@ -22,6 +22,11 @@ jobs:
           TELEGRAM_CHAT_MERCH: ${{ secrets.TELEGRAM_CHAT_MERCH }}
           TELEGRAM_CHAT_NEWS: ${{ secrets.TELEGRAM_CHAT_NEWS }}
           INTERNAL_CHANNEL_ID: ${{ secrets.INTERNAL_CHANNEL_ID }}
+          TELEGRAM_CHAT_VACANCIES: ${{ secrets.TELEGRAM_CHAT_VACANCIES }}
+          ROBOKASSA_LOGIN: ${{ secrets.ROBOKASSA_LOGIN }}
+          ROBOKASSA_PASSWORD1: ${{ secrets.ROBOKASSA_PASSWORD1 }}
+          ROBOKASSA_PASSWORD2: ${{ secrets.ROBOKASSA_PASSWORD2 }}
+          ROBOKASSA_TEST_MODE: ${{ secrets.ROBOKASSA_TEST_MODE }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}

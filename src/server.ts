@@ -23,6 +23,13 @@ import { rulesRoutes } from "./modules/rules/rules.routes";
 import { vacanciesRoutes } from "./modules/vacancies/vacancies.routes";
 import { seoRoutes } from "./modules/seo/seo.routes";
 import { siteInfoRoutes } from "./modules/site-info/site-info.routes";
+import { priceZonesRoutes } from "./modules/tickets/price-zones.routes";
+import { venuesRoutes } from "./modules/tickets/venues.routes";
+import { seatGroupsRoutes } from "./modules/tickets/seat-groups.routes";
+import { ticketEventsRoutes } from "./modules/tickets/ticket-events.routes";
+import { eventSeatsRoutes } from "./modules/tickets/event-seats.routes";
+import { ordersRoutes } from "./modules/tickets/orders.routes";
+import { ticketsRoutes } from "./modules/tickets/tickets.routes";
 
 const app = fastify({ logger: true });
 
@@ -82,6 +89,13 @@ const start = async () => {
     app.register(vacanciesRoutes);
     app.register(seoRoutes);
     app.register(siteInfoRoutes);
+    app.register(priceZonesRoutes);
+    app.register(venuesRoutes);
+    app.register(seatGroupsRoutes);
+    app.register(ticketEventsRoutes);
+    app.register(eventSeatsRoutes);
+    app.register(ordersRoutes);
+    app.register(ticketsRoutes);
     app.register(fastifyStatic, {
       root: path.join(process.cwd(), "uploads"),
       prefix: "/uploads/",
