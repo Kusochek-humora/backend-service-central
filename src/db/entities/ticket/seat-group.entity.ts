@@ -9,6 +9,7 @@ export enum GroupType {
   HIGH_TABLE_4 = "high_table_4",
   ROW = "row",
   BALCONY = "balcony",
+  SINGLE = "single",
 }
 
 @Entity("t_seat_groups")

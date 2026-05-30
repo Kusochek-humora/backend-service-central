@@ -33,6 +33,7 @@ const GROUP_SEAT_OFFSETS: Record<GroupType, { offsetX: number; offsetY: number }
   ],
   [GroupType.ROW]: [],
   [GroupType.BALCONY]: [],
+  [GroupType.SINGLE]: [{ offsetX: 0, offsetY: 0 }],
 };
 
 const ROW_SEAT_SPACING = 50;
