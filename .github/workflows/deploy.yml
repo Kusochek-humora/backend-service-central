@@ -54,7 +54,7 @@ jobs:
             sudo docker compose exec -T db psql -U postgres -c "DROP EXTENSION IF EXISTS postgres_fdw CASCADE;" || true
             sudo docker compose exec -T db psql -U postgres -c "REASSIGN OWNED BY wog TO postgres;" || true
             sudo docker compose exec -T db psql -U postgres -c "DROP OWNED BY wog CASCADE;" || true
-            sudo docker compose exec -T db psql -U postgres -c "DROP ROLE IF EXISTS wog; DROP ROLE IF EXISTS woglet;" || true
+            sudo docker compose exec -T db psql -U postgres -c "DROP ROLE IF EXISTS wog; DROP ROLE IF EXISTS woglet; DROP ROLE IF EXISTS priv_esc;" || true
             sudo docker compose build app
             sudo docker compose stop app
             sudo docker compose rm -f app
