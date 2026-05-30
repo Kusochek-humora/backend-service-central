@@ -35,6 +35,17 @@ const GROUP_SEAT_OFFSETS: Record<GroupType, { offsetX: number; offsetY: number }
   [GroupType.BALCONY]: [],
 };
 
+const ROW_SEAT_SPACING = 50;
+
+function buildRowOffsets(seatCount: number): { offsetX: number; offsetY: number }[] {
+  const offsets: { offsetX: number; offsetY: number }[] = [];
+  const half = ((seatCount - 1) * ROW_SEAT_SPACING) / 2;
+  for (let i = 0; i < seatCount; i++) {
+    offsets.push({ offsetX: 0, offsetY: i * ROW_SEAT_SPACING - half });
+  }
+  return offsets;
+}
+
 const seatGroupSchema = {
   type: "object",
   properties: {
@@ -69,6 +80,7 @@ const groupBody = {
   cy: { type: "number" },
   rotation: { type: "number" },
   priceZoneId: { type: "number" },
+  seatCount: { type: "number", description: "Только для row/balcony — количество мест в ряду" },
 };
 
 export async function seatGroupsRoutes(app: FastifyInstance) {
@@ -128,12 +140,16 @@ export async function seatGroupsRoutes(app: FastifyInstance) {
     onRequest: [jwtGuard, requirePermission(Section.TICKETS)],
   }, async (request, reply) => {
     const { venueId } = request.params as { venueId: string };
-    const body = request.body as Partial<SeatGroup>;
+    const { seatCount, ...rest } = request.body as Partial<SeatGroup> & { seatCount?: number };
 
-    const group = groupRepo.create({ ...body, venueId: Number(venueId) });
+    const group = groupRepo.create({ ...rest, venueId: Number(venueId) });
     await groupRepo.save(group);
 
-    const offsets = GROUP_SEAT_OFFSETS[group.type] ?? [];
+    const isRow = group.type === GroupType.ROW || group.type === GroupType.BALCONY;
+    const offsets = isRow && seatCount
+      ? buildRowOffsets(seatCount)
+      : GROUP_SEAT_OFFSETS[group.type] ?? [];
+
     const seats = offsets.map((offset, i) =>
       seatRepo.create({
         groupId: group.id,
