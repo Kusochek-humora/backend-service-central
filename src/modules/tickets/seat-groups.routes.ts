@@ -40,7 +40,7 @@ const seatGroupSchema = {
   properties: {
     id: { type: "number" },
     venueId: { type: "number" },
-    type: { type: "string" },
+    type: { type: "string", enum: Object.values(GroupType) },
     label: { type: "string" },
     cx: { type: "number" },
     cy: { type: "number" },
@@ -91,7 +91,7 @@ export async function seatGroupsRoutes(app: FastifyInstance) {
     const { venueId } = request.params as { venueId: string };
     return groupRepo.find({
       where: { venueId: Number(venueId) },
-      relations: ["seats"],
+      relations: { seats: true },
       order: { id: "ASC" },
     });
   });
@@ -110,7 +110,7 @@ export async function seatGroupsRoutes(app: FastifyInstance) {
     const { venueId } = request.params as { venueId: string };
     return groupRepo.find({
       where: { venueId: Number(venueId) },
-      relations: ["seats"],
+      relations: { seats: true },
       order: { id: "ASC" },
     });
   });
@@ -146,7 +146,7 @@ export async function seatGroupsRoutes(app: FastifyInstance) {
     );
     if (seats.length) await seatRepo.save(seats);
 
-    const result = await groupRepo.findOne({ where: { id: group.id }, relations: ["seats"] });
+    const result = await groupRepo.findOne({ where: { id: group.id }, relations: { seats: true } });
     return reply.status(201).send(result);
   });
 
@@ -166,7 +166,7 @@ export async function seatGroupsRoutes(app: FastifyInstance) {
     onRequest: [jwtGuard, requirePermission(Section.TICKETS)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const group = await groupRepo.findOne({ where: { id: Number(id) }, relations: ["seats"] });
+    const group = await groupRepo.findOne({ where: { id: Number(id) }, relations: { seats: true } });
     if (!group) return reply.status(404).send({ message: "Not found" });
     groupRepo.merge(group, request.body as Partial<SeatGroup>);
     await groupRepo.save(group);

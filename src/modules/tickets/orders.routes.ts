@@ -17,7 +17,7 @@ const orderSchema = {
     customerEmail: { type: "string" },
     customerPhone: { type: "string" },
     totalAmount: { type: "number" },
-    status: { type: "string" },
+    status: { type: "string", enum: Object.values(OrderStatus) },
     paymentId: { type: ["string", "null"] },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
@@ -185,7 +185,7 @@ export async function ordersRoutes(app: FastifyInstance) {
     onRequest: [jwtGuard, requirePermission(Section.TICKETS)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const order = await orderRepo.findOne({ where: { id: Number(id) }, relations: ["tickets"] });
+    const order = await orderRepo.findOne({ where: { id: Number(id) }, relations: { tickets: true } });
     if (!order) return reply.status(404).send({ message: "Not found" });
     return order;
   });

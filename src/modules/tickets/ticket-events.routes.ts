@@ -17,7 +17,7 @@ const ticketEventSchema = {
     description: { type: ["string", "null"] },
     date: { type: "string" },
     time: { type: "string" },
-    status: { type: "string" },
+    status: { type: "string", enum: Object.values(TicketEventStatus) },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
   },
@@ -27,8 +27,8 @@ const eventBody = {
   venueId: { type: "number" },
   title: { type: "string" },
   description: { type: "string" },
-  date: { type: "string" },
-  time: { type: "string" },
+  date: { type: "string", description: "Формат: YYYY-MM-DD, например 2026-06-15" },
+  time: { type: "string", description: "Формат: HH:MM, например 19:00" },
 };
 
 export async function ticketEventsRoutes(app: FastifyInstance) {

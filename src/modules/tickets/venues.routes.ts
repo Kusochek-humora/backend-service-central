@@ -12,7 +12,7 @@ const venueSchema = {
     id: { type: "number" },
     name: { type: "string" },
     description: { type: ["string", "null"] },
-    svgBackground: { type: ["string", "null"] },
+    svgBackground: { type: ["string", "null"], description: "SVG-разметка фона схемы зала" },
     width: { type: "number" },
     height: { type: "number" },
     createdAt: { type: "string" },

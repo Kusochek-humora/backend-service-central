@@ -12,7 +12,7 @@ const eventSeatSchema = {
     id: { type: "number" },
     eventId: { type: "number" },
     seatId: { type: "number" },
-    status: { type: "string" },
+    status: { type: "string", enum: Object.values(EventSeatStatus) },
     reservedUntil: { type: ["string", "null"] },
     priceOverride: { type: ["number", "null"] },
     orderId: { type: ["number", "null"] },
@@ -62,7 +62,27 @@ export async function eventSeatsRoutes(app: FastifyInstance) {
     const { eventId } = request.params as { eventId: string };
     return repo.find({
       where: { eventId: Number(eventId) },
-      relations: ["seat", "seat.group"],
+      relations: { seat: { group: true } },
+      order: { id: "ASC" },
+    });
+  });
+
+  // ADMIN — все места ивента с координатами (для рендера схемы зала)
+  app.get("/admin/ticket-events/:eventId/seats", {
+    schema: {
+      tags: ["Tickets Admin"],
+      summary: "Места ивента со статусом и координатами для рендера схемы зала",
+      description: "Возвращает все места ивента с вложенными координатами, группой и priceZoneId — для рендера интерактивной схемы зала",
+      ...bearerAuth,
+      params: { type: "object", properties: { eventId: { type: "number" } } },
+      response: { 200: { type: "array", items: eventSeatSchema } },
+    },
+    onRequest: [jwtGuard, requirePermission(Section.TICKETS)],
+  }, async (request) => {
+    const { eventId } = request.params as { eventId: string };
+    return repo.find({
+      where: { eventId: Number(eventId) },
+      relations: { seat: { group: true } },
       order: { id: "ASC" },
     });
   });
@@ -88,7 +108,7 @@ export async function eventSeatsRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const { status } = request.body as { status: EventSeatStatus };
-    const seat = await repo.findOne({ where: { id: Number(id) }, relations: ["seat", "seat.group"] });
+    const seat = await repo.findOne({ where: { id: Number(id) }, relations: { seat: { group: true } } });
     if (!seat) return reply.status(404).send({ message: "Not found" });
     seat.status = status;
     if (status === EventSeatStatus.FREE) seat.reservedUntil = undefined;
