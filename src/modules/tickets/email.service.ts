@@ -1,6 +1,8 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export async function sendTicketsEmail(params: {
   to: string;
@@ -23,7 +25,7 @@ export async function sendTicketsEmail(params: {
     )
     .join("");
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: "tickets@test-standup.ru",
     to,
     subject: `Ваши билеты на ${eventTitle}`,
