@@ -92,8 +92,6 @@ export async function ordersRoutes(app: FastifyInstance) {
       const eventSeats = await manager
         .createQueryBuilder(EventSeat, "es")
         .setLock("pessimistic_write")
-        .leftJoinAndSelect("es.seat", "seat")
-        .leftJoinAndSelect("seat.group", "group")
         .where("es.eventId = :eventId AND es.seatId IN (:...seatIds)", { eventId, seatIds })
         .getMany();
 
