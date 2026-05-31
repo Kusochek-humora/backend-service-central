@@ -7,6 +7,8 @@ import { EventSeat, EventSeatStatus } from "../../db/entities/ticket/event-seat.
 import { Ticket } from "../../db/entities/ticket/ticket.entity";
 import { VenueSeat } from "../../db/entities/ticket/venue-seat.entity";
 import { PriceZone } from "../../db/entities/ticket/price-zone.entity";
+import { TicketEvent } from "../../db/entities/ticket/ticket-event.entity";
+import { sendTicketsEmail } from "./email.service";
 
 function md5(str: string): string {
   return createHash("md5").update(str).digest("hex").toUpperCase();
@@ -30,6 +32,7 @@ export async function paymentRoutes(app: FastifyInstance) {
   const ticketRepo = AppDataSource.getRepository(Ticket);
   const venueSeatRepo = AppDataSource.getRepository(VenueSeat);
   const priceZoneRepo = AppDataSource.getRepository(PriceZone);
+  const eventRepo = AppDataSource.getRepository(TicketEvent);
 
   // PUBLIC — получить ссылку на оплату Robokassa для заказа
   app.get("/orders/:orderId/payment-url", {
@@ -130,6 +133,23 @@ export async function paymentRoutes(app: FastifyInstance) {
 
     await eventSeatRepo.save(eventSeats);
     await ticketRepo.save(tickets);
+
+    // Отправляем билеты на email
+    try {
+      const event = await eventRepo.findOneBy({ id: order.eventId });
+      if (event) {
+        await sendTicketsEmail({
+          to: order.customerEmail,
+          customerName: order.customerName,
+          eventTitle: event.title,
+          eventDate: event.date,
+          eventTime: event.time,
+          tickets: tickets.map((t) => ({ qrToken: t.qrToken, seatId: t.seatId, price: t.price })),
+        });
+      }
+    } catch (e) {
+      // не блокируем ответ если email не ушёл
+    }
 
     // Robokassa ожидает ответ "OK{InvId}"
     return reply.status(200).send(`OK${InvId}`);
