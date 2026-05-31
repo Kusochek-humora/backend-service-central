@@ -41,7 +41,7 @@ export async function paymentRoutes(app: FastifyInstance) {
       summary: "Ссылка на оплату Robokassa для заказа",
       params: { type: "object", properties: { orderId: { type: "number" } } },
       response: {
-        200: { type: "object", properties: { url: { type: "string" } } },
+        200: { type: "object", properties: { url: { type: "string" }, debug: { type: "object", additionalProperties: true } } },
         400: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
@@ -61,6 +61,15 @@ export async function paymentRoutes(app: FastifyInstance) {
     const invId = order.id;
     const sign = getPaymentSign(amount, invId);
 
+    const debug = {
+      login: login || "EMPTY",
+      amount,
+      invId,
+      isTest,
+      hasPassword1: !!process.env.ROBOKASSA_PASSWORD1,
+      sign,
+    };
+
     const url =
       `https://auth.robokassa.ru/Merchant/Index.aspx` +
       `?MrchLogin=${login}` +
@@ -69,7 +78,7 @@ export async function paymentRoutes(app: FastifyInstance) {
       `&SignatureValue=${sign}` +
       `&IsTest=${isTest}`;
 
-    return { url };
+    return { url, debug };
   });
 
   // WEBHOOK — уведомление от Robokassa (ResultURL)
