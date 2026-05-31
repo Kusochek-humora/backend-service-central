@@ -31,6 +31,7 @@ import { eventSeatsRoutes } from "./modules/tickets/event-seats.routes";
 import { ordersRoutes } from "./modules/tickets/orders.routes";
 import { ticketsRoutes } from "./modules/tickets/tickets.routes";
 import { paymentRoutes } from "./modules/tickets/payment.routes";
+import formbody from "@fastify/formbody";
 
 const app = fastify({ logger: true });
 
@@ -76,6 +77,7 @@ const start = async () => {
     await AppDataSource.initialize();
     app.log.info("Database connected");
 
+    await app.register(formbody);
     app.register(authRoutes);
     app.register(usersRoutes);
     app.register(faqRoutes);
