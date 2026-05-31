@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from "typeorm";
 import { Venue } from "./venue.entity";
 import { VenueSeat } from "./venue-seat.entity";
+import { PriceZone } from "./price-zone.entity";
 
 export enum GroupType {
   TABLE_4 = "table_4",
@@ -41,6 +42,10 @@ export class SeatGroup {
 
   @Column({ nullable: true })
   priceZoneId?: number;
+
+  @ManyToOne(() => PriceZone, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "priceZoneId" })
+  priceZone?: PriceZone;
 
   @OneToMany(() => VenueSeat, (s) => s.group, { cascade: true })
   seats!: VenueSeat[];

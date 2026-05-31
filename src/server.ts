@@ -30,6 +30,7 @@ import { ticketEventsRoutes } from "./modules/tickets/ticket-events.routes";
 import { eventSeatsRoutes } from "./modules/tickets/event-seats.routes";
 import { ordersRoutes } from "./modules/tickets/orders.routes";
 import { ticketsRoutes } from "./modules/tickets/tickets.routes";
+import { paymentRoutes } from "./modules/tickets/payment.routes";
 
 const app = fastify({ logger: true });
 
@@ -96,6 +97,7 @@ const start = async () => {
     app.register(eventSeatsRoutes);
     app.register(ordersRoutes);
     app.register(ticketsRoutes);
+    app.register(paymentRoutes);
     app.register(fastifyStatic, {
       root: path.join(process.cwd(), "uploads"),
       prefix: "/uploads/",

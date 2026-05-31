@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm";
 import { SeatGroup } from "./seat-group.entity";
+import { PriceZone } from "./price-zone.entity";
 
 @Entity("t_venue_seats")
 export class VenueSeat {
@@ -27,4 +28,8 @@ export class VenueSeat {
 
   @Column({ nullable: true })
   priceZoneId?: number;
+
+  @ManyToOne(() => PriceZone, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "priceZoneId" })
+  priceZone?: PriceZone;
 }

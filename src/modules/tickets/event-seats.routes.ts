@@ -26,6 +26,15 @@ const eventSeatSchema = {
         offsetX: { type: "number" },
         offsetY: { type: "number" },
         priceZoneId: { type: ["number", "null"] },
+        priceZone: {
+          type: ["object", "null"],
+          properties: {
+            id: { type: "number" },
+            name: { type: "string" },
+            color: { type: "string" },
+            price: { type: "number" },
+          },
+        },
         group: {
           type: "object",
           properties: {
@@ -36,6 +45,15 @@ const eventSeatSchema = {
             cy: { type: "number" },
             rotation: { type: "number" },
             priceZoneId: { type: ["number", "null"] },
+            priceZone: {
+              type: ["object", "null"],
+              properties: {
+                id: { type: "number" },
+                name: { type: "string" },
+                color: { type: "string" },
+                price: { type: "number" },
+              },
+            },
           },
         },
       },
@@ -62,7 +80,7 @@ export async function eventSeatsRoutes(app: FastifyInstance) {
     const { eventId } = request.params as { eventId: string };
     return repo.find({
       where: { eventId: Number(eventId) },
-      relations: { seat: { group: true } },
+      relations: { seat: { priceZone: true, group: { priceZone: true } } },
       order: { id: "ASC" },
     });
   });
@@ -82,7 +100,7 @@ export async function eventSeatsRoutes(app: FastifyInstance) {
     const { eventId } = request.params as { eventId: string };
     return repo.find({
       where: { eventId: Number(eventId) },
-      relations: { seat: { group: true } },
+      relations: { seat: { priceZone: true, group: { priceZone: true } } },
       order: { id: "ASC" },
     });
   });
@@ -108,7 +126,7 @@ export async function eventSeatsRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const { status } = request.body as { status: EventSeatStatus };
-    const seat = await repo.findOne({ where: { id: Number(id) }, relations: { seat: { group: true } } });
+    const seat = await repo.findOne({ where: { id: Number(id) }, relations: { seat: { priceZone: true, group: { priceZone: true } } } });
     if (!seat) return reply.status(404).send({ message: "Not found" });
     seat.status = status;
     if (status === EventSeatStatus.FREE) seat.reservedUntil = undefined;
