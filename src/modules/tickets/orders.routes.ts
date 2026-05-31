@@ -2,6 +2,8 @@ import { FastifyInstance } from "fastify";
 import { AppDataSource } from "../../db/data-source";
 import { Order, OrderStatus } from "../../db/entities/ticket/order.entity";
 import { EventSeat, EventSeatStatus } from "../../db/entities/ticket/event-seat.entity";
+import { VenueSeat } from "../../db/entities/ticket/venue-seat.entity";
+import { PriceZone } from "../../db/entities/ticket/price-zone.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 
@@ -114,8 +116,19 @@ export async function ordersRoutes(app: FastifyInstance) {
       // Считаем сумму
       let totalAmount = 0;
       for (const es of eventSeats) {
-        const price = es.priceOverride ?? es.seat?.group?.priceZoneId ?? 0;
-        totalAmount += typeof price === "number" ? price : 0;
+        if (es.priceOverride) {
+          totalAmount += es.priceOverride;
+          continue;
+        }
+        const venueSeat = await manager.findOne(VenueSeat, {
+          where: { id: es.seatId },
+          relations: { group: true },
+        });
+        const priceZoneId = venueSeat?.priceZoneId ?? venueSeat?.group?.priceZoneId;
+        if (priceZoneId) {
+          const zone = await manager.findOneBy(PriceZone, { id: priceZoneId });
+          totalAmount += zone?.price ?? 0;
+        }
       }
 
       const order = manager.create(Order, {
