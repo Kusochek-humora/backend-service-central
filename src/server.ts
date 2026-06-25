@@ -23,8 +23,9 @@ import { rulesRoutes } from "./modules/rules/rules.routes";
 import { vacanciesRoutes } from "./modules/vacancies/vacancies.routes";
 import { seoRoutes } from "./modules/seo/seo.routes";
 import { siteInfoRoutes } from "./modules/site-info/site-info.routes";
+import { mainPageRoutes } from "./modules/main/main.routes";
 
-const app = fastify({ logger: true });
+const app = fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 }); // 10MB
 
 const start = async () => {
   try {
@@ -82,6 +83,7 @@ const start = async () => {
     app.register(vacanciesRoutes);
     app.register(seoRoutes);
     app.register(siteInfoRoutes);
+    app.register(mainPageRoutes);
     app.register(fastifyStatic, {
       root: path.join(process.cwd(), "uploads"),
       prefix: "/uploads/",
