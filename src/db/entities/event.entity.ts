@@ -63,6 +63,9 @@ export class Event {
   publishToInternalChannel!: boolean;
 
   @Column({ nullable: true })
+  banner?: string;
+
+  @Column({ nullable: true })
   photoStories?: string;
 
   @Column({ nullable: true, type: "bigint" })

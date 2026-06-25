@@ -41,6 +41,9 @@ export class BlogPost {
   @Column()
   photo!: string;
 
+  @Column({ nullable: true })
+  banner?: string;
+
   @Column({ type: "text", array: true, default: "{}" })
   photos!: string[];
 

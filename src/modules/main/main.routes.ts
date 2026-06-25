@@ -23,6 +23,7 @@ const mainEventSchema = {
     isDonation: { type: "boolean" },
     isSoldOut: { type: "boolean" },
     isOnMainPage: { type: "boolean" },
+    banner: { type: ["string", "null"] },
     photoStories: { type: ["string", "null"] },
     notion: { type: ["string", "null"] },
     description: { type: ["string", "null"] },
@@ -53,6 +54,7 @@ const mainNewsSchema = {
     excerpt_kz: { type: ["string", "null"] },
     excerpt_en: { type: ["string", "null"] },
     photo: { type: "string" },
+    banner: { type: ["string", "null"] },
     videoUrl: { type: ["string", "null"] },
     mainLink: { type: ["string", "null"] },
     links: {
@@ -115,7 +117,7 @@ export async function mainPageRoutes(app: FastifyInstance) {
         .select([
           "p.id", "p.title_ru", "p.title_kz", "p.title_en",
           "p.excerpt_ru", "p.excerpt_kz", "p.excerpt_en",
-          "p.photo", "p.videoUrl", "p.mainLink", "p.links",
+          "p.photo", "p.banner", "p.videoUrl", "p.mainLink", "p.links",
           "p.isPublished", "p.isOnMainPage", "p.publishedAt", "p.order", "p.createdAt",
         ])
         .where("p.isPublished = true")

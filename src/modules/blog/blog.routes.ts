@@ -28,6 +28,7 @@ const blogListItemSchema = {
     excerpt_kz: { type: ["string", "null"] },
     excerpt_en: { type: ["string", "null"] },
     photo: { type: "string" },
+    banner: { type: ["string", "null"] },
     videoUrl: { type: ["string", "null"] },
     mainLink: { type: ["string", "null"] },
     links: { type: ["array", "null"], items: linkSchema },
@@ -70,6 +71,7 @@ const bodyProperties = {
   content_kz: { type: "string" },
   content_en: { type: "string" },
   photo: { type: "string" },
+  banner: { type: "string" },
   photos: { type: "array", items: { type: "string" } },
   videoUrl: { type: "string" },
   mainLink: { type: "string" },
@@ -140,7 +142,7 @@ export async function blogRoutes(app: FastifyInstance) {
     const qb = repo.createQueryBuilder("p")
       .select(["p.id", "p.title_ru", "p.title_kz", "p.title_en",
                "p.excerpt_ru", "p.excerpt_kz", "p.excerpt_en",
-               "p.photo", "p.videoUrl", "p.mainLink", "p.links",
+               "p.photo", "p.banner", "p.videoUrl", "p.mainLink", "p.links",
                "p.isPublished", "p.isOnMainPage", "p.publishedAt", "p.order", "p.createdAt"])
       .where("p.isPublished = true");
 
@@ -213,7 +215,7 @@ export async function blogRoutes(app: FastifyInstance) {
     const qb = repo.createQueryBuilder("p")
       .select(["p.id", "p.title_ru", "p.title_kz", "p.title_en",
                "p.excerpt_ru", "p.excerpt_kz", "p.excerpt_en",
-               "p.photo", "p.videoUrl", "p.mainLink", "p.links",
+               "p.photo", "p.banner", "p.videoUrl", "p.mainLink", "p.links",
                "p.isPublished", "p.isOnMainPage", "p.publishToTelegram", "p.publishedAt", "p.order", "p.createdAt"]);
 
     if (year) qb.andWhere("EXTRACT(YEAR FROM COALESCE(p.publishedAt, p.createdAt)) = :year", { year });
