@@ -30,7 +30,7 @@ const app = fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 }); // 10MB
 const start = async () => {
   try {
     await app.register(cors, {
-      origin: ["https://test-standup.ru", "http://localhost:5173", "https://kusochek-humora.github.io"],
+      origin: ["https://test-standup.ru", "http://localhost:5173", "https://kusochek-humora.github.io","http://localhost:3000",],
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-type", "Authorization"],
     });
