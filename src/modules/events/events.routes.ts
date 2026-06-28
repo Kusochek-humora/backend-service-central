@@ -4,7 +4,7 @@ import { Event, Hall, Language } from "../../db/entities/event.entity";
 import { Between, FindOptionsWhere } from "typeorm";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
-import { notifyEventCreated, sendInternalEvent, updateInternalEvent } from "../../utils/telegram";
+import { notifyEventCreated, sendInternalEvent, updateInternalEvent, deleteMessage } from "../../utils/telegram";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -350,7 +350,11 @@ export async function eventsRoutes(app: FastifyInstance) {
     const body = request.body as Partial<Event>;
     const event = eventRepo.create(body);
     await eventRepo.save(event);
-    const telegram = event.publishToTelegram ? await notifyEventCreated(event) : null;
+    let telegram = null;
+    if (event.publishToTelegram) {
+      telegram = await notifyEventCreated(event);
+      if (telegram.msgId) { event.telegramMsgId = telegram.msgId; await eventRepo.save(event); }
+    }
     if (event.publishToInternalChannel) {
       const result = await sendInternalEvent(event);
       if (result.msgId) { event.internalMsgId = result.msgId; await eventRepo.save(event); }
@@ -390,11 +394,17 @@ export async function eventsRoutes(app: FastifyInstance) {
     const event = await eventRepo.findOneBy({ id: Number(id) });
     if (!event) return reply.status(404).send({ message: "Not found" });
     const body = request.body as Partial<Event>;
-    const wasPublished = event.publishToTelegram;
+    const oldTelegramMsgId = event.telegramMsgId;
     const hadInternal = !!event.internalMsgId;
     eventRepo.merge(event, body);
     await eventRepo.save(event);
-    const telegram = !wasPublished && event.publishToTelegram ? await notifyEventCreated(event) : null;
+    let telegram = null;
+    if (event.publishToTelegram) {
+      const chatId = process.env.TELEGRAM_CHAT_NEWS!;
+      if (oldTelegramMsgId && chatId) await deleteMessage(chatId, oldTelegramMsgId);
+      telegram = await notifyEventCreated(event);
+      if (telegram.msgId) { event.telegramMsgId = telegram.msgId; await eventRepo.save(event); }
+    }
     let internalChannel = null;
     if (event.publishToInternalChannel) {
       if (hadInternal && event.internalMsgId) {

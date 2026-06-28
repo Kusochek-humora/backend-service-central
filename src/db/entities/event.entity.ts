@@ -71,6 +71,9 @@ export class Event {
   @Column({ nullable: true, type: "bigint" })
   internalMsgId?: string;
 
+  @Column({ nullable: true, type: "bigint" })
+  telegramMsgId?: string;
+
   @Column({ nullable: true })
   notion?: string;
 

@@ -65,6 +65,9 @@ export class BlogPost {
   @Column({ default: false })
   publishToTelegram!: boolean;
 
+  @Column({ nullable: true, type: "bigint" })
+  telegramMsgId?: string;
+
   @Column({ nullable: true, type: "timestamp" })
   publishedAt?: Date;
 

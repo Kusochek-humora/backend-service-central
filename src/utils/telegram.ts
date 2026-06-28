@@ -6,9 +6,9 @@ import sharp from "sharp";
 const BASE_URL = "https://test-standup.ru";
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 
-export type TelegramResult = { sent: boolean; response?: unknown; error?: string };
+export type TelegramResult = { sent: boolean; msgId?: string; response?: unknown; error?: string };
 
-async function sendTelegram(chatId: string, text: string, photoUrl?: string): Promise<TelegramResult> {
+async function sendTelegram(chatId: string, text: string, photoUrl?: string, parseMode?: string): Promise<TelegramResult> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return { sent: false, error: "TELEGRAM_BOT_TOKEN not set" };
   if (!chatId) return { sent: false, error: "chatId not set" };
@@ -27,47 +27,47 @@ async function sendTelegram(chatId: string, text: string, photoUrl?: string): Pr
         const formData = new FormData();
         formData.append("chat_id", chatId);
         formData.append("caption", text);
+        if (parseMode) formData.append("parse_mode", parseMode);
         formData.append("photo", new Blob([fileBuffer], { type: "image/webp" }), path.basename(filePath));
 
         const res = await fetch(`${api}/sendPhoto`, { method: "POST", body: formData });
-        const json = await res.json();
-        if (res.ok) return { sent: true, response: json };
-        return sendTelegram(chatId, text);
+        const json = await res.json() as any;
+        if (res.ok) return { sent: true, msgId: String(json.result?.message_id), response: json };
+        return sendTelegram(chatId, text, undefined, parseMode);
       } catch {
-        return sendTelegram(chatId, text);
+        return sendTelegram(chatId, text, undefined, parseMode);
       }
     }
 
     const res = await fetch(`${api}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text }),
+      body: JSON.stringify({ chat_id: chatId, text, ...(parseMode && { parse_mode: parseMode }) }),
     });
-    const json = await res.json();
-    return { sent: res.ok, response: json };
+    const json = await res.json() as any;
+    return { sent: res.ok, msgId: res.ok ? String(json.result?.message_id) : undefined, response: json };
   } catch (e) {
     return { sent: false, error: String(e) };
   }
 }
 
 export async function notifyEventCreated(event: {
-  id: number; title: string; comedians?: string;
-  date: string; time: string; photo: string;
+  id: number; title: string; comedians?: string; description?: string;
+  date: string; time: string; photo: string; link: string;
 }): Promise<TelegramResult> {
   const chatId = process.env.TELEGRAM_CHAT_NEWS;
   if (!chatId) return { sent: false, error: "TELEGRAM_CHAT_NEWS not set" };
 
   const lines = [
-    `🎭 Новое мероприятие!`,
-    ``,
     event.title,
     event.comedians ? `👤 ${event.comedians}` : null,
     `📅 ${event.date}, ${event.time.slice(0, 5)}`,
+    event.description ? event.description : null,
     ``,
-    `${BASE_URL}/events/${event.id}`,
+    `<a href="${event.link}">Билеты</a>`,
   ].filter((l) => l !== null).join("\n");
 
-  return sendTelegram(chatId, lines, event.photo);
+  return sendTelegram(chatId, lines, event.photo, "HTML");
 }
 
 export async function notifyBlogCreated(post: {

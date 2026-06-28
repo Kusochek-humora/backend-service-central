@@ -3,7 +3,7 @@ import { AppDataSource } from "../../db/data-source";
 import { BlogPost } from "../../db/entities/blog.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
-import { notifyBlogCreated } from "../../utils/telegram";
+import { notifyBlogCreated, deleteMessage } from "../../utils/telegram";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -259,7 +259,11 @@ export async function blogRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const post = repo.create(request.body as Partial<BlogPost>);
     await repo.save(post);
-    const telegram = post.publishToTelegram ? await notifyBlogCreated(post) : null;
+    let telegram = null;
+    if (post.publishToTelegram) {
+      telegram = await notifyBlogCreated(post);
+      if (telegram.msgId) { post.telegramMsgId = telegram.msgId; await repo.save(post); }
+    }
     return reply.status(201).send({ ...post, telegram });
   });
 
@@ -289,10 +293,16 @@ export async function blogRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const post = await repo.findOneBy({ id: Number(id) });
     if (!post) return reply.status(404).send({ message: "Not found" });
-    const wasPublished = post.publishToTelegram;
+    const oldTelegramMsgId = post.telegramMsgId;
     repo.merge(post, request.body as Partial<BlogPost>);
     await repo.save(post);
-    const telegram = !wasPublished && post.publishToTelegram ? await notifyBlogCreated(post) : null;
+    let telegram = null;
+    if (post.publishToTelegram) {
+      const chatId = process.env.TELEGRAM_CHAT_NEWS!;
+      if (oldTelegramMsgId && chatId) await deleteMessage(chatId, oldTelegramMsgId);
+      telegram = await notifyBlogCreated(post);
+      if (telegram.msgId) { post.telegramMsgId = telegram.msgId; await repo.save(post); }
+    }
     return { ...post, telegram };
   });
 
