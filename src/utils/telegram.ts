@@ -72,25 +72,29 @@ export async function notifyEventCreated(event: {
 
 export async function notifyBlogCreated(post: {
   id: number; title_ru: string;
-  excerpt_ru?: string; excerpt_kz?: string; excerpt_en?: string;
+  excerpt_ru?: string; excerpt_kz?: string;
   photo: string; videoUrl?: string;
 }): Promise<TelegramResult> {
   const chatId = process.env.TELEGRAM_CHAT_NEWS;
   if (!chatId) return { sent: false, error: "TELEGRAM_CHAT_NEWS not set" };
 
-  const excerpts = [post.excerpt_ru, post.excerpt_kz, post.excerpt_en].filter(Boolean);
+  const link = post.videoUrl
+    ? `<a href="${post.videoUrl}">смотреть</a>`
+    : `<a href="${BASE_URL}/blog/${post.id}">читать</a>`;
 
   const lines = [
     post.title_ru,
     ``,
-    ...excerpts,
+    post.excerpt_kz ?? null,
     ``,
-    post.videoUrl ? `▶️ ${post.videoUrl}` : `${BASE_URL}/blog/${post.id}`,
+    post.excerpt_ru ?? null,
+    ``,
+    link,
     ``,
     `#news`,
-  ].join("\n");
+  ].filter((l) => l !== null).join("\n");
 
-  return sendTelegram(chatId, lines, post.photo);
+  return sendTelegram(chatId, lines, post.photo, "HTML");
 }
 
 function fmtDate(date: string): string {
