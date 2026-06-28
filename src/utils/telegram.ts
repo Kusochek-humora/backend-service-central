@@ -71,21 +71,24 @@ export async function notifyEventCreated(event: {
 }
 
 export async function notifyBlogCreated(post: {
-  id: number; title_ru: string; excerpt_ru?: string;
+  id: number; title_ru: string;
+  excerpt_ru?: string; excerpt_kz?: string; excerpt_en?: string;
   photo: string; videoUrl?: string;
 }): Promise<TelegramResult> {
   const chatId = process.env.TELEGRAM_CHAT_NEWS;
   if (!chatId) return { sent: false, error: "TELEGRAM_CHAT_NEWS not set" };
 
+  const excerpts = [post.excerpt_ru, post.excerpt_kz, post.excerpt_en].filter(Boolean);
+
   const lines = [
-    `📰 Новая новость!`,
-    ``,
     post.title_ru,
-    post.excerpt_ru ? post.excerpt_ru : null,
-    post.videoUrl ? `\n▶️ ${post.videoUrl}` : null,
     ``,
-    `${BASE_URL}/blog/${post.id}`,
-  ].filter((l) => l !== null).join("\n");
+    ...excerpts,
+    ``,
+    post.videoUrl ? `▶️ ${post.videoUrl}` : `${BASE_URL}/blog/${post.id}`,
+    ``,
+    `#news`,
+  ].join("\n");
 
   return sendTelegram(chatId, lines, post.photo);
 }
