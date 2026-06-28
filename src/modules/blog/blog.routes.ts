@@ -30,7 +30,16 @@ const blogListItemSchema = {
     photo: { type: "string" },
     banner: { type: ["string", "null"] },
     videoUrl: { type: ["string", "null"] },
-    mainLink: { type: ["string", "null"] },
+    mainLink: {
+      nullable: true,
+      type: "object",
+      properties: {
+        url: { type: "string" },
+        label_ru: { type: "string" },
+        label_kz: { type: "string" },
+        label_en: { type: "string" },
+      },
+    },
     links: { type: ["array", "null"], items: linkSchema },
     isPublished: { type: "boolean" },
     isOnMainPage: { type: "boolean" },
@@ -74,7 +83,16 @@ const bodyProperties = {
   banner: { type: "string" },
   photos: { type: "array", items: { type: "string" } },
   videoUrl: { type: "string" },
-  mainLink: { type: "string" },
+  mainLink: {
+    type: "object",
+    properties: {
+      url: { type: "string" },
+      label_ru: { type: "string" },
+      label_kz: { type: "string" },
+      label_en: { type: "string" },
+    },
+    required: ["url", "label_ru", "label_kz"],
+  },
   links: {
     type: "array",
     items: {

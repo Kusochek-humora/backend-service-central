@@ -78,12 +78,14 @@ export async function notifyBlogCreated(post: {
   const chatId = process.env.TELEGRAM_CHAT_NEWS;
   if (!chatId) return { sent: false, error: "TELEGRAM_CHAT_NEWS not set" };
 
-  const link = post.videoUrl
-    ? `<a href="${post.videoUrl}">смотреть</a>`
+  const isVideo = !!post.videoUrl;
+
+  const link = isVideo
+    ? `▶️ <a href="${post.videoUrl}">смотреть</a>`
     : `<a href="${BASE_URL}/blog/${post.id}">читать</a>`;
 
   const lines = [
-    post.title_ru,
+    isVideo ? `🎬 ${post.title_ru}` : post.title_ru,
     ``,
     post.excerpt_kz ?? null,
     ``,

@@ -56,7 +56,16 @@ const mainNewsSchema = {
     photo: { type: "string" },
     banner: { type: ["string", "null"] },
     videoUrl: { type: ["string", "null"] },
-    mainLink: { type: ["string", "null"] },
+    mainLink: {
+      nullable: true,
+      type: "object",
+      properties: {
+        url: { type: "string" },
+        label_ru: { type: "string" },
+        label_kz: { type: "string" },
+        label_en: { type: "string" },
+      },
+    },
     links: {
       type: ["array", "null"],
       items: {

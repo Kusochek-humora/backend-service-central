@@ -50,8 +50,8 @@ export class BlogPost {
   @Column({ nullable: true })
   videoUrl?: string;
 
-  @Column({ nullable: true })
-  mainLink?: string;
+  @Column({ type: "jsonb", nullable: true })
+  mainLink?: { url: string; label_ru: string; label_kz: string; label_en?: string };
 
   @Column({ type: "jsonb", nullable: true })
   links?: { label_ru: string; label_kz: string; label_en?: string; url: string }[];
