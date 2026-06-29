@@ -7,7 +7,7 @@ import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
 const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 const FOLDERS = ["events", "blog", "menu", "tours", "merch"] as const;
@@ -16,7 +16,7 @@ type Folder = typeof FOLDERS[number];
 export async function uploadRoutes(app: FastifyInstance) {
   app.setErrorHandler((error: { statusCode?: number; code?: string }, _request, reply) => {
     if (error.statusCode === 413 || error.code === "FST_REQ_FILE_TOO_LARGE") {
-      return reply.status(413).send({ message: "Файл слишком большой. Максимум 5MB" });
+      return reply.status(413).send({ message: "Файл слишком большой. Максимум 8MB" });
     }
     reply.send(error);
   });
@@ -77,7 +77,7 @@ export async function uploadRoutes(app: FastifyInstance) {
     const buffer = await file.toBuffer();
 
     if (buffer.length > MAX_FILE_SIZE) {
-      return reply.status(400).send({ message: "File too large. Max 5MB" });
+      return reply.status(400).send({ message: "File too large. Max 8MB" });
     }
 
     const filename = `${randomUUID()}.webp`;
