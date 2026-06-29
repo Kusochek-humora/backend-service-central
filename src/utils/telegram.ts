@@ -347,6 +347,7 @@ export async function notifyVacancyApply(data: {
   vacancyTitle: string;
   name: string;
   phone: string;
+  telegram?: string;
   message?: string;
   resumeBuffer?: Buffer;
   resumeFilename?: string;
@@ -361,6 +362,7 @@ export async function notifyVacancyApply(data: {
     `Вакансия: ${data.vacancyTitle}`,
     `Имя: ${data.name}`,
     `Телефон: ${data.phone}`,
+    data.telegram ? `Telegram: ${data.telegram}` : null,
     data.message ? `Сообщение: ${data.message}` : null,
   ].filter((l) => l !== null).join("\n");
 

@@ -92,6 +92,7 @@ export async function vacanciesRoutes(app: FastifyInstance) {
 
     let name = "";
     let phone = "";
+    let telegram = "";
     let message = "";
     let resumeBuffer: Buffer | undefined;
     let resumeFilename: string | undefined;
@@ -101,6 +102,7 @@ export async function vacanciesRoutes(app: FastifyInstance) {
       const field = value as any;
       if (key === "name") name = field.value ?? "";
       if (key === "phone") phone = field.value ?? "";
+      if (key === "telegram") telegram = field.value ?? "";
       if (key === "message") message = field.value ?? "";
     }
 
@@ -124,6 +126,7 @@ export async function vacanciesRoutes(app: FastifyInstance) {
       vacancyTitle: vacancy.title_ru,
       name,
       phone,
+      telegram: telegram || undefined,
       message: message || undefined,
       resumeBuffer,
       resumeFilename,

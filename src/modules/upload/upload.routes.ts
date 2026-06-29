@@ -1,5 +1,4 @@
 import { FastifyInstance } from "fastify";
-import multipart from "@fastify/multipart";
 import path from "path";
 import fs from "fs/promises";
 import sharp from "sharp";
@@ -15,8 +14,6 @@ const FOLDERS = ["events", "blog", "menu", "tours", "merch"] as const;
 type Folder = typeof FOLDERS[number];
 
 export async function uploadRoutes(app: FastifyInstance) {
-  await app.register(multipart, { limits: { fileSize: MAX_FILE_SIZE } });
-
   app.setErrorHandler((error: { statusCode?: number; code?: string }, _request, reply) => {
     if (error.statusCode === 413 || error.code === "FST_REQ_FILE_TOO_LARGE") {
       return reply.status(413).send({ message: "Файл слишком большой. Максимум 5MB" });

@@ -13,6 +13,7 @@ import { faqRoutes } from "./modules/faq/faq.routes";
 import { eventsRoutes } from "./modules/events/events.routes";
 import { uploadRoutes } from "./modules/upload/upload.routes";
 import fastifyStatic from "@fastify/static";
+import multipart from "@fastify/multipart";
 import path from "path";
 import { categoriesRoutes } from "./modules/events/categories.routes";
 import { menuRoutes } from "./modules/menu/menu.routes";
@@ -61,6 +62,8 @@ const start = async () => {
         persistAuthorization: true,
       },
     });
+
+    await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } });
 
     await app.register(fastifyJwt, {
       secret: env.jwtSecret,
