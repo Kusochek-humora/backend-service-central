@@ -8,16 +8,13 @@ const run = async () => {
   const catRepo = AppDataSource.getRepository(MenuCategory);
   const itemRepo = AppDataSource.getRepository(MenuItem);
 
-  const existing = await itemRepo.count();
-  if (existing > 10) {
-    console.log(`Menu items already exist (${existing}), skipping.`);
-    await AppDataSource.destroy();
-    return;
-  }
-
   const cat = async (name_ru: string, name_kz: string, name_en: string, order: number) => {
-    const c = catRepo.create({ name_ru, name_kz, name_en, order, isPublic: true });
-    return catRepo.save(c);
+    const existing = await catRepo.findOneBy({ name_ru });
+    if (existing) {
+      catRepo.merge(existing, { name_kz, name_en, order, isPublic: true });
+      return catRepo.save(existing);
+    }
+    return catRepo.save(catRepo.create({ name_ru, name_kz, name_en, order, isPublic: true }));
   };
 
   const item = async (
@@ -36,6 +33,23 @@ const run = async () => {
       discount?: number;
     } = {}
   ) => {
+    const existing = opts.volume
+      ? await itemRepo.findOneBy({ categoryId, name_ru, volume: opts.volume })
+      : await itemRepo.createQueryBuilder("i")
+          .where("i.categoryId = :c AND i.name_ru = :n AND i.volume IS NULL", { c: categoryId, n: name_ru })
+          .getOne();
+
+    if (existing) {
+      existing.description_ru = opts.description_ru ?? existing.description_ru;
+      existing.description_kz = opts.description_kz ?? existing.description_kz;
+      existing.description_en = opts.description_en ?? existing.description_en;
+      existing.name_en = opts.name_en ?? existing.name_en;
+      if (opts.discount !== undefined) existing.discount = opts.discount;
+      await itemRepo.save(existing);
+      console.log(`  ~ ${name_ru}`);
+      return;
+    }
+
     const i = itemRepo.create({
       categoryId,
       order,
