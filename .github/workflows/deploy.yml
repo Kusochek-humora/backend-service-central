@@ -63,6 +63,7 @@ jobs:
             sleep 10
             sudo docker compose exec -T app npm run migration:run:prod
             sudo docker compose exec -T app node dist/db/seeds/create-chief-editor.js
+            sudo docker compose exec -T app node dist/db/seeds/seed-rules.js
             echo "=== DB roles ==="
             sudo docker compose exec -T db psql -U postgres -c "SELECT rolname FROM pg_roles WHERE rolname NOT LIKE 'pg_%' ORDER BY rolname;"
             echo "=== App logs (last 50) ==="
