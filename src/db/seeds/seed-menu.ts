@@ -9,7 +9,7 @@ const run = async () => {
   const itemRepo = AppDataSource.getRepository(MenuItem);
 
   const existing = await itemRepo.count();
-  if (existing > 0) {
+  if (existing > 10) {
     console.log(`Menu items already exist (${existing}), skipping.`);
     await AppDataSource.destroy();
     return;
