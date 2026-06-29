@@ -77,7 +77,19 @@ export async function vacanciesRoutes(app: FastifyInstance) {
       summary: "Отклик на вакансию",
       params: { type: "object", properties: { id: { type: "number" } } },
       response: {
-        200: { type: "object", properties: { message: { type: "string" } } },
+        200: {
+          type: "object",
+          properties: {
+            message: { type: "string" },
+            telegram: {
+              type: "object",
+              properties: {
+                sent: { type: "boolean" },
+                error: { type: "string" },
+              },
+            },
+          },
+        },
         400: { type: "object", properties: { message: { type: "string" } } },
         404: { type: "object", properties: { message: { type: "string" } } },
       },
@@ -87,9 +99,6 @@ export async function vacanciesRoutes(app: FastifyInstance) {
     const vacancy = await vacancyRepo.findOneBy({ id: Number(id), isPublished: true });
     if (!vacancy) return reply.status(404).send({ message: "Not found" });
 
-    const data = await request.file();
-    if (!data) return reply.status(400).send({ message: "Multipart body required" });
-
     let name = "";
     let phone = "";
     let telegram = "";
@@ -97,32 +106,33 @@ export async function vacanciesRoutes(app: FastifyInstance) {
     let resumeBuffer: Buffer | undefined;
     let resumeFilename: string | undefined;
 
-    // @ts-ignore
-    for (const [key, value] of Object.entries(data.fields ?? {})) {
-      const field = value as any;
-      if (key === "name") name = field.value ?? "";
-      if (key === "phone") phone = field.value ?? "";
-      if (key === "telegram") telegram = field.value ?? "";
-      if (key === "message") message = field.value ?? "";
+    for await (const part of request.parts()) {
+      if (part.type === "field") {
+        if (part.fieldname === "name") name = String(part.value ?? "");
+        if (part.fieldname === "phone") phone = String(part.value ?? "");
+        if (part.fieldname === "telegram") telegram = String(part.value ?? "");
+        if (part.fieldname === "message") message = String(part.value ?? "");
+      } else if (part.type === "file" && (part.mimetype === "application/pdf" || part.filename?.endsWith(".pdf"))) {
+        const chunks: Buffer[] = [];
+        let size = 0;
+        for await (const chunk of part.file) {
+          size += chunk.length;
+          if (size > MAX_RESUME_SIZE) {
+            part.file.resume();
+            return reply.status(400).send({ message: "Resume file too large (max 10MB)" });
+          }
+          chunks.push(chunk);
+        }
+        resumeBuffer = Buffer.concat(chunks);
+        resumeFilename = part.filename ?? "resume.pdf";
+      } else if (part.type === "file") {
+        part.file.resume();
+      }
     }
 
     if (!name || !phone) return reply.status(400).send({ message: "name and phone are required" });
 
-    if (data.mimetype === "application/pdf" || data.filename?.endsWith(".pdf")) {
-      const chunks: Buffer[] = [];
-      let size = 0;
-      for await (const chunk of data.file) {
-        size += chunk.length;
-        if (size > MAX_RESUME_SIZE) return reply.status(400).send({ message: "Resume file too large (max 10MB)" });
-        chunks.push(chunk);
-      }
-      resumeBuffer = Buffer.concat(chunks);
-      resumeFilename = data.filename ?? "resume.pdf";
-    } else {
-      data.file.resume();
-    }
-
-    await notifyVacancyApply({
+    const tg = await notifyVacancyApply({
       vacancyTitle: vacancy.title_ru,
       name,
       phone,
@@ -132,7 +142,7 @@ export async function vacanciesRoutes(app: FastifyInstance) {
       resumeFilename,
     });
 
-    return { message: "Отклик отправлен" };
+    return { message: "Отклик отправлен", telegram: { sent: tg.sent, error: tg.error } };
   });
 
   app.get("/admin/vacancies", {
