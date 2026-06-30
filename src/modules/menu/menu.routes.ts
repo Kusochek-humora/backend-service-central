@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { AppDataSource } from "../../db/data-source";
-import { MenuCategory, MenuItem } from "../../db/entities/menu.entity";
+import { MenuCategory, MenuItem, MenuItemReview } from "../../db/entities/menu.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 import { IsNull } from "typeorm";
@@ -370,6 +370,143 @@ export async function menuRoutes(app: FastifyInstance) {
     const item = await itemRepo.findOneBy({ id: Number(id) });
     if (!item) return reply.status(404).send({ message: "Not found" });
     await itemRepo.remove(item);
+    return { message: "Deleted" };
+  });
+
+  // ── Reviews ──────────────────────────────────────────────────────────────
+
+  const reviewRepo = AppDataSource.getRepository(MenuItemReview);
+
+  const reviewSchema = {
+    type: "object",
+    properties: {
+      id: { type: "number" },
+      menuItemId: { type: "number" },
+      rating: { type: "number" },
+      comment: { type: ["string", "null"] },
+      isVisible: { type: "boolean" },
+      createdAt: { type: "string" },
+    },
+  };
+
+  // PUBLIC — оставить отзыв
+  app.post("/menu/:id/reviews", {
+    schema: {
+      tags: ["Menu Public"],
+      summary: "Оставить отзыв на позицию меню",
+      params: { type: "object", properties: { id: { type: "number" } } },
+      body: {
+        type: "object",
+        required: ["rating"],
+        properties: {
+          rating: { type: "number", minimum: 1, maximum: 5 },
+          comment: { type: "string" },
+        },
+      },
+      response: {
+        201: reviewSchema,
+        400: { type: "object", properties: { message: { type: "string" } } },
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const item = await itemRepo.findOneBy({ id: Number(id) });
+    if (!item) return reply.status(404).send({ message: "Not found" });
+
+    const { rating, comment } = request.body as { rating: number; comment?: string };
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return reply.status(400).send({ message: "rating must be 1–5" });
+    }
+
+    const review = reviewRepo.create({ menuItemId: Number(id), rating, comment });
+    await reviewRepo.save(review);
+    return reply.status(201).send(review);
+  });
+
+  // ADMIN — список отзывов по позиции
+  app.get("/admin/menu/:id/reviews", {
+    schema: {
+      tags: ["Menu Admin"],
+      summary: "Отзывы на позицию меню",
+      ...bearerAuth,
+      params: { type: "object", properties: { id: { type: "number" } } },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            data: { type: "array", items: reviewSchema },
+            total: { type: "number" },
+            avgRating: { type: ["number", "null"] },
+          },
+        },
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+    onRequest: [jwtGuard, requirePermission(Section.MENU)],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const item = await itemRepo.findOneBy({ id: Number(id) });
+    if (!item) return reply.status(404).send({ message: "Not found" });
+
+    const data = await reviewRepo.find({
+      where: { menuItemId: Number(id) },
+      order: { createdAt: "DESC" },
+    });
+
+    const avgRating = data.length
+      ? Math.round((data.reduce((s, r) => s + r.rating, 0) / data.length) * 10) / 10
+      : null;
+
+    return { data, total: data.length, avgRating };
+  });
+
+  // ADMIN — скрыть/показать отзыв
+  app.patch("/admin/menu/reviews/:reviewId", {
+    schema: {
+      tags: ["Menu Admin"],
+      summary: "Изменить видимость отзыва",
+      ...bearerAuth,
+      params: { type: "object", properties: { reviewId: { type: "number" } } },
+      body: {
+        type: "object",
+        required: ["isVisible"],
+        properties: { isVisible: { type: "boolean" } },
+      },
+      response: {
+        200: reviewSchema,
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+    onRequest: [jwtGuard, requirePermission(Section.MENU)],
+  }, async (request, reply) => {
+    const { reviewId } = request.params as { reviewId: string };
+    const review = await reviewRepo.findOneBy({ id: Number(reviewId) });
+    if (!review) return reply.status(404).send({ message: "Not found" });
+
+    review.isVisible = (request.body as { isVisible: boolean }).isVisible;
+    await reviewRepo.save(review);
+    return review;
+  });
+
+  // ADMIN — удалить отзыв
+  app.delete("/admin/menu/reviews/:reviewId", {
+    schema: {
+      tags: ["Menu Admin"],
+      summary: "Удалить отзыв",
+      ...bearerAuth,
+      params: { type: "object", properties: { reviewId: { type: "number" } } },
+      response: {
+        200: { type: "object", properties: { message: { type: "string" } } },
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+    onRequest: [jwtGuard, requirePermission(Section.MENU)],
+  }, async (request, reply) => {
+    const { reviewId } = request.params as { reviewId: string };
+    const review = await reviewRepo.findOneBy({ id: Number(reviewId) });
+    if (!review) return reply.status(404).send({ message: "Not found" });
+    await reviewRepo.remove(review);
     return { message: "Deleted" };
   });
 }

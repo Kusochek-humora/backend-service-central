@@ -109,3 +109,28 @@ export class MenuItem {
   @UpdateDateColumn()
   updatedAt!: Date;
 }
+
+@Entity("menu_item_reviews")
+export class MenuItemReview {
+  @PrimaryGeneratedColumn()
+  id!: number;
+
+  @Column()
+  menuItemId!: number;
+
+  @ManyToOne(() => MenuItem, { nullable: false, onDelete: "CASCADE" })
+  @JoinColumn({ name: "menuItemId" })
+  menuItem!: MenuItem;
+
+  @Column({ type: "int" })
+  rating!: number;
+
+  @Column({ nullable: true, type: "text" })
+  comment?: string;
+
+  @Column({ default: true })
+  isVisible!: boolean;
+
+  @CreateDateColumn()
+  createdAt!: Date;
+}
