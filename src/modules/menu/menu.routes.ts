@@ -49,12 +49,17 @@ const itemSchema = {
     photos: { type: "array", items: { type: "string" } },
     volume: { type: ["string", "null"] },
     weight: { type: ["string", "null"] },
+    ingredients_ru: { type: ["string", "null"] },
+    ingredients_kz: { type: ["string", "null"] },
+    ingredients_en: { type: ["string", "null"] },
     isAvailable: { type: "boolean" },
     isNew: { type: "boolean" },
     discount: { type: ["number", "null"] },
     order: { type: "number" },
     categoryId: { type: "number" },
     category: subcategorySchema,
+    avgRating: { type: ["number", "null"] },
+    reviewCount: { type: "number" },
   },
 };
 
@@ -70,6 +75,9 @@ const itemBodyProperties = {
   photos: { type: "array", items: { type: "string" } },
   volume: { type: "string", description: "Объём: 500мл, 1л, бутылка" },
   weight: { type: "string", description: "Граммовка: 200г, порция" },
+  ingredients_ru: { type: "string" },
+  ingredients_kz: { type: "string" },
+  ingredients_en: { type: "string" },
   isAvailable: { type: "boolean" },
   isNew: { type: "boolean" },
   discount: { type: "number", description: "Скидка в процентах (0-100)" },
@@ -85,6 +93,27 @@ const categoryBodyProperties = {
   isPublic: { type: "boolean" },
   parentId: { type: "number", description: "ID родительской категории. Не указывать для главной категории." },
 };
+
+async function withRatings(items: MenuItem[]) {
+  if (!items.length) return items;
+  const ids = items.map(i => i.id);
+  const rows: { menuItemId: number; avgRating: string; reviewCount: string }[] =
+    await AppDataSource.query(
+      `SELECT "menuItemId",
+              ROUND(AVG(rating)::numeric, 1) AS "avgRating",
+              COUNT(id)::int                 AS "reviewCount"
+       FROM menu_item_reviews
+       WHERE "menuItemId" = ANY($1) AND "isVisible" = true
+       GROUP BY "menuItemId"`,
+      [ids]
+    );
+  const map = new Map(rows.map(r => [r.menuItemId, r]));
+  return items.map(item => ({
+    ...item,
+    avgRating: map.has(item.id) ? Number(map.get(item.id)!.avgRating) : null,
+    reviewCount: map.has(item.id) ? Number(map.get(item.id)!.reviewCount) : 0,
+  }));
+}
 
 export async function menuRoutes(app: FastifyInstance) {
   const categoryRepo = AppDataSource.getRepository(MenuCategory);
@@ -136,7 +165,30 @@ export async function menuRoutes(app: FastifyInstance) {
 
     if (categoryId) qb.andWhere("i.categoryId = :categoryId", { categoryId });
 
-    return qb.orderBy("i.order", "ASC").getMany();
+    const items = await qb.orderBy("i.order", "ASC").getMany();
+    return withRatings(items);
+  });
+
+  app.get("/menu/:id", {
+    schema: {
+      tags: ["Menu Public"],
+      summary: "Позиция меню по ID",
+      params: { type: "object", properties: { id: { type: "number" } } },
+      response: {
+        200: itemSchema,
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const item = await itemRepo.createQueryBuilder("i")
+      .leftJoinAndSelect("i.category", "category")
+      .leftJoinAndSelect("category.parent", "parent")
+      .where("i.id = :id AND i.isAvailable = true", { id: Number(id) })
+      .getOne();
+    if (!item) return reply.status(404).send({ message: "Not found" });
+    const [withRating] = await withRatings([item]);
+    return withRating;
   });
 
   // FULL — для QR-меню внутри клуба
@@ -180,7 +232,8 @@ export async function menuRoutes(app: FastifyInstance) {
 
     if (categoryId) qb.andWhere("i.categoryId = :categoryId", { categoryId });
 
-    return qb.orderBy("i.order", "ASC").getMany();
+    const items = await qb.orderBy("i.order", "ASC").getMany();
+    return withRatings(items);
   });
 
   // ADMIN — категории

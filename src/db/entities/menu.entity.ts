@@ -69,6 +69,15 @@ export class MenuItem {
   @Column({ nullable: true, type: "text" })
   description_en?: string;
 
+  @Column({ nullable: true, type: "text" })
+  ingredients_ru?: string;
+
+  @Column({ nullable: true, type: "text" })
+  ingredients_kz?: string;
+
+  @Column({ nullable: true, type: "text" })
+  ingredients_en?: string;
+
   @Column({ type: "decimal", precision: 10, scale: 2 })
   price!: number;
 
