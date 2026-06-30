@@ -352,7 +352,8 @@ export async function menuRoutes(app: FastifyInstance) {
       .leftJoinAndSelect("i.category", "category")
       .leftJoinAndSelect("category.parent", "parent");
     if (categoryId) qb.where("i.categoryId = :categoryId", { categoryId });
-    return qb.orderBy("i.order", "ASC").getMany();
+    const items = await qb.orderBy("i.order", "ASC").getMany();
+    return withRatings(items);
   });
 
   app.post("/admin/menu", {
