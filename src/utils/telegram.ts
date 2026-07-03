@@ -67,7 +67,7 @@ export async function notifyEventCreated(event: {
     event.link
       ? `<a href="${event.link}">Билеты</a>`
       : event.yandexSessionId
-        ? `<a href="${process.env.PUBLIC_SITE_URL}/events/${event.id}">Билеты</a>`
+        ? `<a href="${process.env.PUBLIC_SITE_URL}/afisha/${event.id}">Билеты</a>`
         : null,
   ].filter((l) => l !== null).join("\n");
 
@@ -193,13 +193,18 @@ export async function deleteMessage(chatId: string, messageId: string): Promise<
 
 export async function sendInternalEvent(event: {
   id: number; title: string; date: string; time: string;
-  photo: string; photoStories?: string; link?: string;
+  photo: string; photoStories?: string; link?: string; yandexSessionId?: string;
 }): Promise<{ msgId?: string; error?: string }> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!chatId || !token) return { error: "INTERNAL_CHANNEL_ID or TELEGRAM_BOT_TOKEN not set" };
 
-  const caption = `${fmtDate(event.date)} ${event.time.slice(0, 5)}\n${event.title}${event.link ? `\n${event.link}` : ""}`;
+  const ticketUrl = event.link
+    ? event.link
+    : event.yandexSessionId
+      ? `${process.env.PUBLIC_SITE_URL}/afisha/${event.id}`
+      : null;
+  const caption = `${fmtDate(event.date)} ${event.time.slice(0, 5)}\n${event.title}${ticketUrl ? `\n${ticketUrl}` : ""}`;
 
   try {
     const postBuf = await readFileBuffer(event.photo);
