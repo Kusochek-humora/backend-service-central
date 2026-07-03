@@ -16,7 +16,8 @@ const eventSchema = {
     photo: { type: "string" },
     hall: { type: "string", enum: ["big", "small"] },
     language: { type: "string", enum: ["ru", "kz", "en"] },
-    link: { type: "string" },
+    link: { type: ["string", "null"] },
+    yandexSessionId: { type: ["string", "null"] },
     date: { type: "string", description: "YYYY-MM-DD" },
     time: { type: "string", description: "HH:MM" },
     isDonation: { type: "boolean" },
@@ -50,7 +51,8 @@ const eventProperties = {
   photo: { type: "string", description: "URL из /admin/upload/events" },
   hall: { type: "string", enum: Object.values(Hall), description: "big | small" },
   language: { type: "string", enum: Object.values(Language), description: "Язык события: ru | kz | en" },
-  link: { type: "string", description: "Ссылка на билеты" },
+  link: { type: "string", description: "Ссылка на билеты (альтернатива yandexSessionId)" },
+  yandexSessionId: { type: "string", description: "ID сессии Яндекс Билетов, например ticketsteam-9984@67162074" },
   date: { type: "string", description: "YYYY-MM-DD" },
   time: { type: "string", description: "HH:MM" },
   isDonation: { type: "boolean", description: "Мероприятие по донейшену" },
@@ -69,7 +71,7 @@ const eventProperties = {
 
 const bodySchema = {
   type: "object",
-  required: ["title", "photo", "hall", "link", "date", "time"],
+  required: ["title", "photo", "hall", "date", "time"],
   properties: eventProperties,
 };
 

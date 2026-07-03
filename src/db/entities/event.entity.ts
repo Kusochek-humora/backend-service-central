@@ -38,8 +38,11 @@ export class Event {
   @Column({ type: "enum", enum: Language, default: Language.RU })
   language!: Language;
 
-  @Column()
-  link!: string;
+  @Column({ nullable: true })
+  link?: string;
+
+  @Column({ nullable: true })
+  yandexSessionId?: string;
 
   @Column({ type: "date" })
   date!: string;

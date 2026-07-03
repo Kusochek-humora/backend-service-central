@@ -53,7 +53,7 @@ async function sendTelegram(chatId: string, text: string, photoUrl?: string, par
 
 export async function notifyEventCreated(event: {
   id: number; title: string; comedians?: string; description?: string;
-  date: string; time: string; photo: string; link: string;
+  date: string; time: string; photo: string; link?: string; yandexSessionId?: string;
 }): Promise<TelegramResult> {
   const chatId = process.env.TELEGRAM_CHAT_NEWS;
   if (!chatId) return { sent: false, error: "TELEGRAM_CHAT_NEWS not set" };
@@ -64,7 +64,11 @@ export async function notifyEventCreated(event: {
     `📅 ${event.date}, ${event.time.slice(0, 5)}`,
     event.description ? event.description : null,
     ``,
-    `<a href="${event.link}">Билеты</a>`,
+    event.link
+      ? `<a href="${event.link}">Билеты</a>`
+      : event.yandexSessionId
+        ? `<a href="${process.env.PUBLIC_SITE_URL}/events/${event.id}">Билеты</a>`
+        : null,
   ].filter((l) => l !== null).join("\n");
 
   return sendTelegram(chatId, lines, event.photo, "HTML");
@@ -189,13 +193,13 @@ export async function deleteMessage(chatId: string, messageId: string): Promise<
 
 export async function sendInternalEvent(event: {
   id: number; title: string; date: string; time: string;
-  photo: string; photoStories?: string; link: string;
+  photo: string; photoStories?: string; link?: string;
 }): Promise<{ msgId?: string; error?: string }> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!chatId || !token) return { error: "INTERNAL_CHANNEL_ID or TELEGRAM_BOT_TOKEN not set" };
 
-  const caption = `${fmtDate(event.date)} ${event.time.slice(0, 5)}\n${event.title}\n${event.link}`;
+  const caption = `${fmtDate(event.date)} ${event.time.slice(0, 5)}\n${event.title}${event.link ? `\n${event.link}` : ""}`;
 
   try {
     const postBuf = await readFileBuffer(event.photo);
@@ -226,7 +230,7 @@ export async function sendInternalEvent(event: {
 
 export async function updateInternalEvent(event: {
   id: number; title: string; date: string; time: string;
-  photo: string; photoStories?: string; internalMsgId: string; link: string;
+  photo: string; photoStories?: string; internalMsgId: string; link?: string;
 }): Promise<{ msgId?: string }> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;
