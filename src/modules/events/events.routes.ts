@@ -151,6 +151,7 @@ export async function eventsRoutes(app: FastifyInstance) {
 
     if (date) {
       qb.andWhere("e.date = :date", { date });
+      if (date === today) qb.andWhere("e.time >= :currentTime", { currentTime });
     } else if (period === "today") {
       qb.andWhere("e.date = :today", { today });
     } else if (period === "week") {
