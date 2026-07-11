@@ -4,6 +4,9 @@ import { Tour, TourShow } from "../../db/entities/tour.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 import { sendInternalShow, updateInternalShow, deleteMessage } from "../../utils/telegram";
+import { cacheGet, cacheSet, cacheDelPattern, cacheKey } from "../../utils/cache";
+
+const TTL_TOURS = 600;
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -99,10 +102,12 @@ export async function toursRoutes(app: FastifyInstance) {
       response: { 200: { type: "array", items: tourSchema } },
     },
   }, async () => {
-    return tourRepo.find({
-      where: { isPublished: true },
-      order: { order: "ASC", createdAt: "DESC" },
-    });
+    const key = "tours:list";
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const result = await tourRepo.find({ where: { isPublished: true }, order: { order: "ASC", createdAt: "DESC" } });
+    await cacheSet(key, result, TTL_TOURS);
+    return result;
   });
 
   // PUBLIC — один тур
@@ -118,8 +123,12 @@ export async function toursRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const key = `tours:id:${id}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
     const tour = await tourRepo.findOneBy({ id: Number(id), isPublished: true });
     if (!tour) return reply.status(404).send({ message: "Not found" });
+    await cacheSet(key, tour, TTL_TOURS);
     return tour;
   });
 
@@ -142,6 +151,10 @@ export async function toursRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const { page = 1, limit = 10 } = request.query as { page?: number; limit?: number };
 
+    const key = cacheKey(`tours:shows:${id}`, { page, limit });
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     const [data, total] = await showRepo.findAndCount({
       where: { tourId: Number(id), isPublished: true },
       order: { order: "ASC", date: "ASC" },
@@ -149,7 +162,9 @@ export async function toursRoutes(app: FastifyInstance) {
       take: limit,
     });
 
-    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+    const result = { data, total, page, limit, pages: Math.ceil(total / limit) };
+    await cacheSet(key, result, TTL_TOURS);
+    return result;
   });
 
   // ADMIN — все туры
@@ -229,6 +244,7 @@ export async function toursRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const tour = tourRepo.create(request.body as Partial<Tour>);
     await tourRepo.save(tour);
+    await cacheDelPattern("tours:*");
     return reply.status(201).send(tour);
   });
 
@@ -252,6 +268,7 @@ export async function toursRoutes(app: FastifyInstance) {
     if (!tour) return reply.status(404).send({ message: "Not found" });
     tourRepo.merge(tour, request.body as Partial<Tour>);
     await tourRepo.save(tour);
+    await cacheDelPattern("tours:*");
     return tour;
   });
 
@@ -273,6 +290,7 @@ export async function toursRoutes(app: FastifyInstance) {
     const tour = await tourRepo.findOneBy({ id: Number(id) });
     if (!tour) return reply.status(404).send({ message: "Not found" });
     await tourRepo.remove(tour);
+    await cacheDelPattern("tours:*");
     return { message: "Deleted" };
   });
 
@@ -300,6 +318,7 @@ export async function toursRoutes(app: FastifyInstance) {
     if (!tour) return reply.status(404).send({ message: "Tour not found" });
     const show = showRepo.create({ ...request.body as Partial<TourShow>, tourId: Number(tourId) });
     await showRepo.save(show);
+    await cacheDelPattern("tours:*");
     if (show.publishToInternalChannel) {
       const result = await sendInternalShow(tour, show);
       if (result.msgId) { show.internalMsgId = result.msgId; await showRepo.save(show); }
@@ -327,6 +346,7 @@ export async function toursRoutes(app: FastifyInstance) {
     if (!show) return reply.status(404).send({ message: "Not found" });
     showRepo.merge(show, request.body as Partial<TourShow>);
     await showRepo.save(show);
+    await cacheDelPattern("tours:*");
     const tour = await tourRepo.findOneBy({ id: Number(tourId) });
     if (show.publishToInternalChannel && tour) {
       if (show.internalMsgId) {
@@ -363,6 +383,7 @@ export async function toursRoutes(app: FastifyInstance) {
       await deleteMessage(chatId, String(Number(show.internalMsgId) + 1));
     }
     await showRepo.remove(show);
+    await cacheDelPattern("tours:*");
     return { message: "Deleted" };
   });
 }

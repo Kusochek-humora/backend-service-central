@@ -4,6 +4,9 @@ import { MenuCategory, MenuItem, MenuItemReview } from "../../db/entities/menu.e
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 import { IsNull } from "typeorm";
+import { cacheGet, cacheSet, cacheDelPattern, cacheKey } from "../../utils/cache";
+
+const TTL_MENU = 600;
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -133,11 +136,12 @@ export async function menuRoutes(app: FastifyInstance) {
       },
     },
   }, async () => {
-    return categoryRepo.find({
-      where: { parentId: IsNull(), isPublic: true },
-      relations: { children: true },
-      order: { order: "ASC" },
-    });
+    const key = "menu:categories";
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const result = await categoryRepo.find({ where: { parentId: IsNull(), isPublic: true }, relations: { children: true }, order: { order: "ASC" } });
+    await cacheSet(key, result, TTL_MENU);
+    return result;
   });
 
   app.get("/menu", {
@@ -156,6 +160,9 @@ export async function menuRoutes(app: FastifyInstance) {
     },
   }, async (request) => {
     const { categoryId } = request.query as { categoryId?: number };
+    const key = cacheKey("menu:list", { categoryId });
+    const cached = await cacheGet(key);
+    if (cached) return cached;
 
     const qb = itemRepo.createQueryBuilder("i")
       .leftJoinAndSelect("i.category", "category")
@@ -166,7 +173,9 @@ export async function menuRoutes(app: FastifyInstance) {
     if (categoryId) qb.andWhere("i.categoryId = :categoryId", { categoryId });
 
     const items = await qb.orderBy("i.order", "ASC").getMany();
-    return withRatings(items);
+    const result = await withRatings(items);
+    await cacheSet(key, result, TTL_MENU);
+    return result;
   });
 
   app.get("/menu/:id", {
@@ -181,6 +190,9 @@ export async function menuRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const key = `menu:id:${id}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
     const item = await itemRepo.createQueryBuilder("i")
       .leftJoinAndSelect("i.category", "category")
       .leftJoinAndSelect("category.parent", "parent")
@@ -188,6 +200,7 @@ export async function menuRoutes(app: FastifyInstance) {
       .getOne();
     if (!item) return reply.status(404).send({ message: "Not found" });
     const [withRating] = await withRatings([item]);
+    await cacheSet(key, withRating, TTL_MENU);
     return withRating;
   });
 
@@ -201,11 +214,12 @@ export async function menuRoutes(app: FastifyInstance) {
       },
     },
   }, async () => {
-    return categoryRepo.find({
-      where: { parentId: IsNull() },
-      relations: { children: true },
-      order: { order: "ASC" },
-    });
+    const key = "menu:full-categories";
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const result = await categoryRepo.find({ where: { parentId: IsNull() }, relations: { children: true }, order: { order: "ASC" } });
+    await cacheSet(key, result, TTL_MENU);
+    return result;
   });
 
   app.get("/menu/full", {
@@ -224,6 +238,9 @@ export async function menuRoutes(app: FastifyInstance) {
     },
   }, async (request) => {
     const { categoryId } = request.query as { categoryId?: number };
+    const key = cacheKey("menu:full", { categoryId });
+    const cached = await cacheGet(key);
+    if (cached) return cached;
 
     const qb = itemRepo.createQueryBuilder("i")
       .leftJoinAndSelect("i.category", "category")
@@ -233,7 +250,9 @@ export async function menuRoutes(app: FastifyInstance) {
     if (categoryId) qb.andWhere("i.categoryId = :categoryId", { categoryId });
 
     const items = await qb.orderBy("i.order", "ASC").getMany();
-    return withRatings(items);
+    const result = await withRatings(items);
+    await cacheSet(key, result, TTL_MENU);
+    return result;
   });
 
   // ADMIN — категории
@@ -278,6 +297,7 @@ export async function menuRoutes(app: FastifyInstance) {
     const body = request.body as Partial<MenuCategory>;
     const category = categoryRepo.create(body);
     await categoryRepo.save(category);
+    await cacheDelPattern("menu:*");
     return reply.status(201).send(category);
   });
 
@@ -302,6 +322,7 @@ export async function menuRoutes(app: FastifyInstance) {
     if (!category) return reply.status(404).send({ message: "Not found" });
     categoryRepo.merge(category, request.body as Partial<MenuCategory>);
     await categoryRepo.save(category);
+    await cacheDelPattern("menu:*");
     return category;
   });
 
@@ -324,6 +345,7 @@ export async function menuRoutes(app: FastifyInstance) {
     const category = await categoryRepo.findOneBy({ id: Number(id) });
     if (!category) return reply.status(404).send({ message: "Not found" });
     await categoryRepo.remove(category);
+    await cacheDelPattern("menu:*");
     return { message: "Deleted" };
   });
 
@@ -377,6 +399,7 @@ export async function menuRoutes(app: FastifyInstance) {
     const body = request.body as Partial<MenuItem>;
     const item = itemRepo.create(body);
     await itemRepo.save(item);
+    await cacheDelPattern("menu:*");
     const saved = await itemRepo.findOne({ where: { id: item.id }, relations: { category: true } });
     return reply.status(201).send(saved);
   });
@@ -402,6 +425,7 @@ export async function menuRoutes(app: FastifyInstance) {
     if (!item) return reply.status(404).send({ message: "Not found" });
     itemRepo.merge(item, request.body as Partial<MenuItem>);
     await itemRepo.save(item);
+    await cacheDelPattern("menu:*");
     return itemRepo.findOne({ where: { id: item.id }, relations: { category: true } });
   });
 
@@ -424,6 +448,7 @@ export async function menuRoutes(app: FastifyInstance) {
     const item = await itemRepo.findOneBy({ id: Number(id) });
     if (!item) return reply.status(404).send({ message: "Not found" });
     await itemRepo.remove(item);
+    await cacheDelPattern("menu:*");
     return { message: "Deleted" };
   });
 

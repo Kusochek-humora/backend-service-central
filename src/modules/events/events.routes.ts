@@ -5,6 +5,9 @@ import { Between, FindOptionsWhere } from "typeorm";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 import { notifyEventCreated, sendInternalEvent, updateInternalEvent, deleteMessage } from "../../utils/telegram";
+import { cacheGet, cacheSet, cacheDelPattern, cacheKey } from "../../utils/cache";
+
+const TTL_EVENTS = 120; // 2 min — time-sensitive
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -142,6 +145,10 @@ export async function eventsRoutes(app: FastifyInstance) {
     const today = now.toISOString().split("T")[0];
     const currentTime = now.toISOString().split("T")[1].slice(0, 8);
 
+    const key = cacheKey("events:list", request.query as object);
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     const qb = eventRepo.createQueryBuilder("e").leftJoinAndSelect("e.category", "category");
 
     if (hall) qb.andWhere("e.hall = :hall", { hall });
@@ -162,7 +169,9 @@ export async function eventsRoutes(app: FastifyInstance) {
       qb.andWhere("(e.date > :today OR (e.date = :today AND e.time >= :currentTime))", { today, currentTime });
     }
 
-    return qb.orderBy("e.date", "ASC").addOrderBy("e.time", "ASC").getMany();
+    const result = await qb.orderBy("e.date", "ASC").addOrderBy("e.time", "ASC").getMany();
+    await cacheSet(key, result, TTL_EVENTS);
+    return result;
   });
 
   app.get("/events/:id", {
@@ -177,8 +186,12 @@ export async function eventsRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const key = `events:id:${id}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
     const event = await eventRepo.findOneBy({ id: Number(id) });
     if (!event) return reply.status(404).send({ message: "Not found" });
+    await cacheSet(key, event, TTL_EVENTS);
     return event;
   });
 
@@ -232,6 +245,11 @@ export async function eventsRoutes(app: FastifyInstance) {
     },
   }, async (request) => {
     const { page = 1, limit = 20 } = request.query as { page?: number; limit?: number };
+
+    const key = cacheKey("events:past", { page, limit });
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     const now = almatyNow();
     const today = now.toISOString().split("T")[0];
     const currentTime = now.toISOString().split("T")[1].slice(0, 8);
@@ -246,7 +264,9 @@ export async function eventsRoutes(app: FastifyInstance) {
       .getManyAndCount();
 
     const data = events.map(({ photo: _p, link: _l, isDonation: _d, isOnMainPage: _m, categoryId: _cid, createdAt: _ca, updatedAt: _ua, ...rest }) => rest);
-    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+    const result = { data, total, page, limit, pages: Math.ceil(total / limit) };
+    await cacheSet(key, result, TTL_EVENTS);
+    return result;
   });
 
   // ADMIN
@@ -353,6 +373,7 @@ export async function eventsRoutes(app: FastifyInstance) {
     const body = request.body as Partial<Event>;
     const event = eventRepo.create(body);
     await eventRepo.save(event);
+    await cacheDelPattern("events:*");
     let telegram = null;
     if (event.publishToTelegram) {
       telegram = await notifyEventCreated(event);
@@ -401,6 +422,7 @@ export async function eventsRoutes(app: FastifyInstance) {
     const hadInternal = !!event.internalMsgId;
     eventRepo.merge(event, body);
     await eventRepo.save(event);
+    await cacheDelPattern("events:*");
     let telegram = null;
     if (event.publishToTelegram) {
       const chatId = process.env.TELEGRAM_CHAT_NEWS!;
@@ -447,6 +469,7 @@ export async function eventsRoutes(app: FastifyInstance) {
     const event = await eventRepo.findOneBy({ id: Number(id) });
     if (!event) return reply.status(404).send({ message: "Not found" });
     await eventRepo.remove(event);
+    await cacheDelPattern("events:*");
     return { message: "Deleted" };
   });
 }

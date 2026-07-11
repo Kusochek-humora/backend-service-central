@@ -4,6 +4,9 @@ import { BlogPost } from "../../db/entities/blog.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 import { notifyBlogCreated, deleteMessage } from "../../utils/telegram";
+import { cacheGet, cacheSet, cacheDelPattern, cacheKey } from "../../utils/cache";
+
+const TTL_BLOG = 600;
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
@@ -157,6 +160,10 @@ export async function blogRoutes(app: FastifyInstance) {
       page?: number; limit?: number; year?: number; month?: number; onMainPage?: boolean;
     };
 
+    const key = cacheKey("blog:list", { page, limit, year, month, onMainPage });
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     const qb = repo.createQueryBuilder("p")
       .select(["p.id", "p.title_ru", "p.title_kz", "p.title_en",
                "p.excerpt_ru", "p.excerpt_kz", "p.excerpt_en",
@@ -176,7 +183,9 @@ export async function blogRoutes(app: FastifyInstance) {
       .take(limit)
       .getMany();
 
-    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+    const result = { data, total, page, limit, pages: Math.ceil(total / limit) };
+    await cacheSet(key, result, TTL_BLOG);
+    return result;
   });
 
   // PUBLIC — один пост (полный контент)
@@ -192,8 +201,12 @@ export async function blogRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const key = `blog:id:${id}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
     const post = await repo.findOneBy({ id: Number(id), isPublished: true });
     if (!post) return reply.status(404).send({ message: "Not found" });
+    await cacheSet(key, post, TTL_BLOG);
     return post;
   });
 
@@ -277,6 +290,7 @@ export async function blogRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const post = repo.create(request.body as Partial<BlogPost>);
     await repo.save(post);
+    await cacheDelPattern("blog:*");
     let telegram = null;
     if (post.publishToTelegram) {
       telegram = await notifyBlogCreated(post);
@@ -314,6 +328,7 @@ export async function blogRoutes(app: FastifyInstance) {
     const oldTelegramMsgId = post.telegramMsgId;
     repo.merge(post, request.body as Partial<BlogPost>);
     await repo.save(post);
+    await cacheDelPattern("blog:*");
     let telegram = null;
     if (post.publishToTelegram) {
       const chatId = process.env.TELEGRAM_CHAT_NEWS!;
@@ -344,6 +359,7 @@ export async function blogRoutes(app: FastifyInstance) {
     const post = await repo.findOneBy({ id: Number(id) });
     if (!post) return reply.status(404).send({ message: "Not found" });
     await repo.remove(post);
+    await cacheDelPattern("blog:*");
     return { message: "Deleted" };
   });
 }
