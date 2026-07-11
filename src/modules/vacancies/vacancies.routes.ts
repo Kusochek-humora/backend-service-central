@@ -72,6 +72,7 @@ export async function vacanciesRoutes(app: FastifyInstance) {
 
   // PUBLIC — отклик на вакансию (multipart)
   app.post("/vacancies/:id/apply", {
+    config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
     schema: {
       tags: ["Vacancies Public"],
       summary: "Отклик на вакансию",

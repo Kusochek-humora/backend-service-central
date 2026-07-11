@@ -5,6 +5,7 @@ import { User } from "../../db/entities/user.entity";
 
 export async function authRoutes(app: FastifyInstance) {
   app.post("/auth/login", {
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
     schema: {
       tags: ["Auth"],
       summary: "Войти в систему",

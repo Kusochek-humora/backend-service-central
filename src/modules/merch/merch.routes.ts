@@ -141,6 +141,7 @@ export async function merchRoutes(app: FastifyInstance) {
 
   // PUBLIC — оформить заказ
   app.post("/merch/order", {
+    config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
     schema: {
       tags: ["Merch Public"],
       summary: "Оформить заказ",

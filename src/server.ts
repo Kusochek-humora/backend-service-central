@@ -29,6 +29,7 @@ import { eventFileGroupsRoutes } from "./modules/events/event-file-groups.routes
 import cron from "node-cron";
 import { EventFileGroup } from "./db/entities/event-file-group.entity";
 import fs from "fs/promises";
+import rateLimit from "@fastify/rate-limit";
 
 const app = fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 }); // 10MB
 
@@ -38,6 +39,10 @@ const start = async () => {
       origin: ["https://test-standup.ru", "http://localhost:5173", "https://kusochek-humora.github.io", "http://localhost:3000", "http://192.168.1.2:3000", "https://public-website-central.vercel.app"],
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-type", "Authorization"],
+    });
+
+    await app.register(rateLimit, {
+      global: false,
     });
 
     await app.register(swagger, {
@@ -128,6 +133,29 @@ const start = async () => {
 
 app.get("/", async () => {
   return { message: "yan pedik" };
+});
+
+app.get("/health", {
+  schema: {
+    tags: ["System"],
+    summary: "Healthcheck",
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          status: { type: "string" },
+          db: { type: "boolean" },
+          uptime: { type: "number" },
+        },
+      },
+    },
+  },
+}, async () => {
+  return {
+    status: "ok",
+    db: AppDataSource.isInitialized,
+    uptime: Math.floor(process.uptime()),
+  };
 });
 
 start();

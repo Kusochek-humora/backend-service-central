@@ -470,6 +470,7 @@ export async function menuRoutes(app: FastifyInstance) {
 
   // PUBLIC — оставить отзыв
   app.post("/menu/:id/reviews", {
+    config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
     schema: {
       tags: ["Menu Public"],
       summary: "Оставить отзыв на позицию меню",
