@@ -58,18 +58,19 @@ export async function notifyEventCreated(event: {
   const chatId = process.env.TELEGRAM_CHAT_NEWS;
   if (!chatId) return { sent: false, error: "TELEGRAM_CHAT_NEWS not set" };
 
+  const ticketLine = event.link
+    ? `<a href="${event.link}">Билеты</a>`
+    : event.yandexSessionId
+      ? `<a href="${process.env.PUBLIC_SITE_URL}/afisha/${event.id}">Билеты</a>`
+      : null;
+
   const lines = [
-    event.title,
-    event.comedians ? `👤 ${event.comedians}` : null,
-    `📅 ${event.date}, ${event.time.slice(0, 5)}`,
-    event.description ? event.description : null,
-    ``,
-    event.link
-      ? `<a href="${event.link}">Билеты</a>`
-      : event.yandexSessionId
-        ? `<a href="${process.env.PUBLIC_SITE_URL}/afisha/${event.id}">Билеты</a>`
-        : null,
-  ].filter((l) => l !== null).join("\n");
+    `🎤 ${event.title}\n📅 ${fmtDate(event.date)}, ${event.time.slice(0, 5)}`,
+    event.comedians ? `Состав:\n${event.comedians}` : null,
+    event.description ?? null,
+    ticketLine,
+    `#мероприятие`,
+  ].filter((l) => l !== null).join("\n\n");
 
   return sendTelegram(chatId, lines, event.photo, "HTML");
 }
@@ -235,7 +236,7 @@ export async function sendInternalEvent(event: {
 
 export async function updateInternalEvent(event: {
   id: number; title: string; date: string; time: string;
-  photo: string; photoStories?: string; internalMsgId: string; link?: string;
+  photo: string; photoStories?: string; internalMsgId: string; link?: string; yandexSessionId?: string;
 }): Promise<{ msgId?: string }> {
   const chatId = process.env.INTERNAL_CHANNEL_ID;
   const token = process.env.TELEGRAM_BOT_TOKEN;

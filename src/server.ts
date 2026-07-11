@@ -26,6 +26,9 @@ import { seoRoutes } from "./modules/seo/seo.routes";
 import { siteInfoRoutes } from "./modules/site-info/site-info.routes";
 import { mainPageRoutes } from "./modules/main/main.routes";
 import { eventFileGroupsRoutes } from "./modules/events/event-file-groups.routes";
+import cron from "node-cron";
+import { EventFileGroup } from "./db/entities/event-file-group.entity";
+import fs from "fs/promises";
 
 const app = fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 }); // 10MB
 
@@ -72,6 +75,24 @@ const start = async () => {
 
     await AppDataSource.initialize();
     app.log.info("Database connected");
+
+    const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+    async function cleanExpiredFileGroups() {
+      const repo = AppDataSource.getRepository(EventFileGroup);
+      const now = new Date(Date.now() + 5 * 60 * 60 * 1000);
+      const today = now.toISOString().split("T")[0];
+      const currentTime = now.toISOString().split("T")[1].slice(0, 8);
+      const all = await repo.find();
+      for (const g of all.filter(g => g.date < today || (g.date === today && g.time <= currentTime))) {
+        await fs.unlink(path.join(UPLOAD_DIR, g.photo.replace(/^\/uploads\//, ""))).catch(() => {});
+        if (g.photoStories) await fs.unlink(path.join(UPLOAD_DIR, g.photoStories.replace(/^\/uploads\//, ""))).catch(() => {});
+        if (g.banner) await fs.unlink(path.join(UPLOAD_DIR, g.banner.replace(/^\/uploads\//, ""))).catch(() => {});
+        await repo.remove(g);
+      }
+    }
+    cleanExpiredFileGroups();
+    // каждый день в 03:00 по Алматы (UTC+5 = 22:00 UTC)
+    cron.schedule("0 22 * * *", cleanExpiredFileGroups);
 
     app.register(authRoutes);
     app.register(usersRoutes);
