@@ -95,6 +95,41 @@ export async function eventFileGroupsRoutes(app: FastifyInstance) {
     return reply.status(201).send(group);
   });
 
+  // PUT — обновить группу
+  app.put("/admin/event-file-groups/:id", {
+    schema: {
+      tags: ["Event File Groups"],
+      summary: "Обновить набор фото",
+      security: [{ bearerAuth: [] }],
+      params: { type: "object", properties: { id: { type: "number" } } },
+      body: {
+        type: "object",
+        properties: {
+          photo: { type: "string" },
+          photoStories: { type: "string" },
+          banner: { type: "string" },
+          date: { type: "string", description: "YYYY-MM-DD" },
+          time: { type: "string", description: "HH:MM" },
+          label: { type: "string" },
+        },
+      },
+      response: {
+        200: groupSchema,
+        404: { type: "object", properties: { message: { type: "string" } } },
+      },
+    },
+    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const group = await repo.findOneBy({ id: Number(id) });
+    if (!group) return reply.status(404).send({ message: "Not found" });
+
+    const body = request.body as Partial<EventFileGroup>;
+    repo.merge(group, body);
+    await repo.save(group);
+    return group;
+  });
+
   // DELETE — удалить группу вручную
   app.delete("/admin/event-file-groups/:id", {
     schema: {
