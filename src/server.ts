@@ -31,7 +31,7 @@ import { EventFileGroup } from "./db/entities/event-file-group.entity";
 import fs from "fs/promises";
 import rateLimit from "@fastify/rate-limit";
 
-const app = fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 }); // 10MB
+const app = fastify({ logger: true, bodyLimit: 10 * 1024 * 1024, connectionTimeout: 30000, requestTimeout: 30000 }); // 10MB
 
 const start = async () => {
   try {
