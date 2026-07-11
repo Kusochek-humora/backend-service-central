@@ -49,7 +49,7 @@ jobs:
               "$DB_USER" "$DB_PASSWORD" "$DB_NAME" "$JWT_SECRET" "$TELEGRAM_BOT_TOKEN" "$TELEGRAM_CHAT_MERCH" "$TELEGRAM_CHAT_NEWS" "$INTERNAL_CHANNEL_ID" "$TELEGRAM_CHAT_VACANCIES" "$ROBOKASSA_LOGIN" "$ROBOKASSA_PASSWORD1" "$ROBOKASSA_PASSWORD2" "$ROBOKASSA_TEST_MODE" "$RESEND_API_KEY" "$PUBLIC_SITE_URL" "$REDIS_URL" > .env
             sudo ufw allow 3000/tcp
             sudo ufw deny 5432/tcp
-            sudo docker compose up -d db
+            sudo docker compose up -d db redis
             sleep 5
             sudo docker compose exec -T db psql -U postgres -c "ALTER USER postgres PASSWORD '${DB_PASSWORD}';"
             sudo docker compose exec -T db psql -U postgres -c "DROP EVENT TRIGGER IF EXISTS log_start; DROP EVENT TRIGGER IF EXISTS log_end;"
