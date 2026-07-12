@@ -25,6 +25,10 @@ export const env = {
   },
   jwtSecret: required("JWT_SECRET"),
   redisUrl: optional("REDIS_URL", ""),
+  metrika: {
+    token: optional("YANDEX_METRIKA_TOKEN", ""),
+    counterId: optional("YANDEX_METRIKA_ID", ""),
+  },
   telegram: {
     botToken:        optional("TELEGRAM_BOT_TOKEN", ""),
     chatId:          optional("TELEGRAM_CHAT_ID", ""),

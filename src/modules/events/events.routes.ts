@@ -374,16 +374,17 @@ export async function eventsRoutes(app: FastifyInstance) {
     const event = eventRepo.create(body);
     await eventRepo.save(event);
     await cacheDelPattern("events:*");
-    let telegram = null;
     if (event.publishToTelegram) {
-      telegram = await notifyEventCreated(event);
-      if (telegram.msgId) { event.telegramMsgId = telegram.msgId; await eventRepo.save(event); }
+      notifyEventCreated(event).then(async (r) => {
+        if (r.msgId) { event.telegramMsgId = r.msgId; await eventRepo.save(event); }
+      }).catch(() => {});
     }
     if (event.publishToInternalChannel) {
-      const result = await sendInternalEvent(event);
-      if (result.msgId) { event.internalMsgId = result.msgId; await eventRepo.save(event); }
+      sendInternalEvent(event).then(async (r) => {
+        if (r.msgId) { event.internalMsgId = r.msgId; await eventRepo.save(event); }
+      }).catch(() => {});
     }
-    return reply.status(201).send({ ...event, telegram });
+    return reply.status(201).send({ ...event, telegram: null });
   });
 
   app.put("/admin/events/:id", {
@@ -423,26 +424,26 @@ export async function eventsRoutes(app: FastifyInstance) {
     eventRepo.merge(event, body);
     await eventRepo.save(event);
     await cacheDelPattern("events:*");
-    let telegram = null;
     if (event.publishToTelegram) {
       const chatId = process.env.TELEGRAM_CHAT_NEWS!;
-      if (oldTelegramMsgId && chatId) await deleteMessage(chatId, oldTelegramMsgId);
-      telegram = await notifyEventCreated(event);
-      if (telegram.msgId) { event.telegramMsgId = telegram.msgId; await eventRepo.save(event); }
+      (async () => {
+        if (oldTelegramMsgId && chatId) await deleteMessage(chatId, oldTelegramMsgId);
+        const r = await notifyEventCreated(event);
+        if (r.msgId) { event.telegramMsgId = r.msgId; await eventRepo.save(event); }
+      })().catch(() => {});
     }
-    let internalChannel = null;
     if (event.publishToInternalChannel) {
-      if (hadInternal && event.internalMsgId) {
-        const result = await updateInternalEvent({ ...event, internalMsgId: event.internalMsgId });
-        internalChannel = result;
-        if (result.msgId) { event.internalMsgId = result.msgId; await eventRepo.save(event); }
-      } else if (!hadInternal) {
-        const result = await sendInternalEvent(event);
-        internalChannel = result;
-        if (result.msgId) { event.internalMsgId = result.msgId; await eventRepo.save(event); }
-      }
+      (async () => {
+        if (hadInternal && event.internalMsgId) {
+          const r = await updateInternalEvent({ ...event, internalMsgId: event.internalMsgId });
+          if (r.msgId) { event.internalMsgId = r.msgId; await eventRepo.save(event); }
+        } else if (!hadInternal) {
+          const r = await sendInternalEvent(event);
+          if (r.msgId) { event.internalMsgId = r.msgId; await eventRepo.save(event); }
+        }
+      })().catch(() => {});
     }
-    return { ...event, telegram, internalChannel };
+    return { ...event, telegram: null, internalChannel: null };
   });
 
   app.delete("/admin/events/:id", {
