@@ -5,14 +5,14 @@ import { env } from "../../config/env";
 
 const bearerAuth = { security: [{ bearerAuth: [] }] };
 
-async function metrikaFetch(path: string, params: Record<string, string>) {
+async function metrikaFetch(path: string, params: Record<string, string>): Promise<any> {
   const url = new URL(`https://api-metrika.yandex.net${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url.toString(), {
     headers: { Authorization: `OAuth ${env.metrika.token}` },
   });
   if (!res.ok) throw new Error(`Metrika API error: ${res.status}`);
-  return res.json();
+  return res.json() as Promise<any>;
 }
 
 export async function analyticsRoutes(app: FastifyInstance) {
@@ -62,26 +62,24 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const id = env.metrika.counterId;
 
     try {
-      const [totalsData, byDateData, topPagesData] = await Promise.all([
-        metrikaFetch("/stat/v1/data", {
-          id, date1, date2,
-          metrics: "ym:s:visits,ym:s:users,ym:s:pageviews",
-        }),
-        metrikaFetch("/stat/v1/data", {
-          id, date1, date2,
-          dimensions: "ym:s:date",
-          metrics: "ym:s:visits,ym:s:users",
-          sort: "ym:s:date",
-          limit: "60",
-        }),
-        metrikaFetch("/stat/v1/data", {
-          id, date1, date2,
-          dimensions: "ym:s:URLPath",
-          metrics: "ym:s:pageviews",
-          sort: "-ym:s:pageviews",
-          limit: "10",
-        }),
-      ]);
+      const totalsData = await metrikaFetch("/stat/v1/data", {
+        id, date1, date2,
+        metrics: "ym:s:visits,ym:s:users,ym:s:pageviews",
+      });
+      const byDateData = await metrikaFetch("/stat/v1/data", {
+        id, date1, date2,
+        dimensions: "ym:s:date",
+        metrics: "ym:s:visits,ym:s:users",
+        sort: "ym:s:date",
+        limit: "60",
+      });
+      const topPagesData = await metrikaFetch("/stat/v1/data", {
+        id, date1, date2,
+        dimensions: "ym:s:URLPath",
+        metrics: "ym:s:pageviews",
+        sort: "-ym:s:pageviews",
+        limit: "10",
+      });
 
       const t = totalsData.totals ?? [];
       const totals = { visits: t[0] ?? 0, users: t[1] ?? 0, pageviews: t[2] ?? 0 };
