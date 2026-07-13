@@ -6,5 +6,11 @@ export class AlemCategory {
   id!: number;
 
   @Column()
-  name!: string;
+  name_ru!: string;
+
+  @Column({ nullable: true })
+  name_kz?: string;
+
+  @Column({ nullable: true })
+  name_en?: string;
 }

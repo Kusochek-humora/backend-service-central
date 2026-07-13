@@ -10,7 +10,7 @@ const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
 const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
-const FOLDERS = ["events", "blog", "menu", "tours", "merch"] as const;
+const FOLDERS = ["events", "blog", "menu", "tours", "merch", "alem"] as const;
 type Folder = typeof FOLDERS[number];
 
 export async function uploadRoutes(app: FastifyInstance) {
