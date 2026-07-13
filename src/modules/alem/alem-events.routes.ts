@@ -235,21 +235,25 @@ export async function alemEventsRoutes(app: FastifyInstance) {
     await cacheDelPattern("alem:*");
     const saved = await repo.findOne({ where: { id: event.id }, relations: { location: true, category: true } });
 
+    console.log(`[alem/events POST] id=${saved?.id} publishToOrganizerTelegram=${saved?.publishToOrganizerTelegram} publishToMainTelegram=${saved?.publishToMainTelegram}`);
+
     if (saved && saved.publishToOrganizerTelegram) {
       sendAlemEvent({
         id: saved.id, title: saved.title, date: saved.date, time: saved.time,
         photo: saved.photo, photoStories: saved.photoStories,
         link: saved.link, yandexSessionId: saved.yandexSessionId, moreinfolink: saved.moreinfolink,
       }).then(async (r) => {
+        console.log("[alem/events POST] sendAlemEvent result:", JSON.stringify(r));
         if (r.msgId) await repo.update(saved.id, { telegramMsgId: r.msgId });
-      }).catch(() => {});
+      }).catch((e) => console.error("[alem/events POST] sendAlemEvent error:", e));
     }
 
     if (saved && saved.publishToMainTelegram) {
       notifyAlemEventCreated({
         id: saved.id, title: saved.title, date: saved.date, time: saved.time,
         photo: saved.photo, link: saved.link, yandexSessionId: saved.yandexSessionId,
-      }).catch(() => {});
+      }).then((r) => console.log("[alem/events POST] notifyAlemEventCreated result:", JSON.stringify(r)))
+        .catch((e) => console.error("[alem/events POST] notifyAlemEventCreated error:", e));
     }
 
     return reply.status(201).send(saved);

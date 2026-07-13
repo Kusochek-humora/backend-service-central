@@ -381,19 +381,21 @@ export async function sendAlemEvent(event: {
 }): Promise<{ msgId?: string; error?: string }> {
   const chatId = process.env.TELEGRAM_ALEM;
   const token = process.env.TELEGRAM_BOT_TOKEN;
+  console.log("[sendAlemEvent] chatId:", chatId ? "set" : "MISSING", "| token:", token ? "set" : "MISSING", "| event id:", event.id);
   if (!chatId || !token) return { error: "TELEGRAM_ALEM or TELEGRAM_BOT_TOKEN not set" };
 
-  const lines: string[] = [
-    `${fmtDate(event.date)} ${event.time.slice(0, 5)} ${event.title}`,
-  ];
+  const lines: string[] = [`${fmtDate(event.date)} ${event.time.slice(0, 5)} ${event.title}`];
   if (event.link) lines.push(`Ссылка на виджет:\n${event.link}`);
   if (event.yandexSessionId) lines.push(`Alemfest:\nhttps://alemfest.kz/events/${event.id}`);
+  // moreinfolink всегда отдельно, если есть
   if (event.moreinfolink) lines.push(`Афиша:\n${event.moreinfolink}`);
 
   const caption = lines.join("\n\n");
+  console.log("[sendAlemEvent] caption length:", caption.length, "| photo:", event.photo, "| photoStories:", event.photoStories ?? "none");
 
   try {
     const postBuf = await readFileBuffer(event.photo);
+    console.log("[sendAlemEvent] postBuf:", postBuf ? `${postBuf.length} bytes` : "NOT FOUND");
     if (!postBuf) return { error: "photo file not found" };
 
     const postFilename = `${event.date}_${event.title}_пост.jpg`;
@@ -406,15 +408,18 @@ export async function sendAlemEvent(event: {
           { buffer: postBuf, filename: postFilename, caption },
           { buffer: storiesBuf, filename: `${event.date}_${event.title}_сториз.jpg` },
         );
+        console.log("[sendAlemEvent] mediaGroup result:", JSON.stringify(sent));
         if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
         return { msgId: String(sent.result[0].message_id) };
       }
     }
 
     const sent = await sendDocument(chatId, postBuf, postFilename, caption) as any;
+    console.log("[sendAlemEvent] sendDocument result:", JSON.stringify(sent));
     if (!sent.ok) return { error: sent.description ?? "failed to send post document" };
     return { msgId: String(sent.result!.message_id) };
   } catch (e) {
+    console.error("[sendAlemEvent] exception:", e);
     return { error: String(e) };
   }
 }
