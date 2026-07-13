@@ -27,6 +27,10 @@ import { siteInfoRoutes } from "./modules/site-info/site-info.routes";
 import { mainPageRoutes } from "./modules/main/main.routes";
 import { eventFileGroupsRoutes } from "./modules/events/event-file-groups.routes";
 import { analyticsRoutes } from "./modules/analytics/analytics.routes";
+import { alemLocationsRoutes } from "./modules/alem/alem-locations.routes";
+import { alemCategoriesRoutes } from "./modules/alem/alem-categories.routes";
+import { alemFileGroupsRoutes } from "./modules/alem/alem-file-groups.routes";
+import { alemEventsRoutes } from "./modules/alem/alem-events.routes";
 import cron from "node-cron";
 import { EventFileGroup } from "./db/entities/event-file-group.entity";
 import fs from "fs/promises";
@@ -37,7 +41,7 @@ const app = fastify({ logger: true, bodyLimit: 10 * 1024 * 1024, connectionTimeo
 const start = async () => {
   try {
     await app.register(cors, {
-      origin: ["https://test-standup.ru", "http://localhost:5173", "https://kusochek-humora.github.io", "http://localhost:3000", "http://192.168.1.2:3000", "https://public-website-central.vercel.app", "https://standupclub.kz", "https://www.standupclub.kz"],
+      origin: ["https://test-standup.ru", "http://localhost:5173", "https://kusochek-humora.github.io", "http://localhost:3000", "http://192.168.1.2:3000", "https://public-website-central.vercel.app", "https://standupclub.kz", "https://www.standupclub.kz", "https://alemfest.kz", "https://www.alemfest.kz"],
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-type", "Authorization"],
     });
@@ -117,6 +121,10 @@ const start = async () => {
     app.register(mainPageRoutes);
     app.register(eventFileGroupsRoutes);
     app.register(analyticsRoutes);
+    app.register(alemLocationsRoutes);
+    app.register(alemCategoriesRoutes);
+    app.register(alemFileGroupsRoutes);
+    app.register(alemEventsRoutes);
     app.register(fastifyStatic, {
       root: path.join(process.cwd(), "uploads"),
       prefix: "/uploads/",
