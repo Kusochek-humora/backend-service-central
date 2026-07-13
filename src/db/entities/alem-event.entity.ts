@@ -25,6 +25,9 @@ export class AlemEvent {
   @Column({ type: "time" })
   time!: string;
 
+  @Column({ type: "time", nullable: true })
+  gatheringTime?: string;
+
   @Column({ type: "enum", enum: ["ru", "kz", "en"], default: "ru" })
   language!: string;
 

@@ -50,6 +50,9 @@ export class Event {
   @Column({ type: "time" })
   time!: string;
 
+  @Column({ type: "time", nullable: true })
+  gatheringTime?: string;
+
   @Column({ default: false })
   isDonation!: boolean;
 
