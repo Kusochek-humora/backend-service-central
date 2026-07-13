@@ -239,7 +239,7 @@ export async function alemEventsRoutes(app: FastifyInstance) {
       sendAlemEvent({
         id: saved.id, title: saved.title, date: saved.date, time: saved.time,
         photo: saved.photo, photoStories: saved.photoStories,
-        link: saved.link, yandexSessionId: saved.yandexSessionId,
+        link: saved.link, yandexSessionId: saved.yandexSessionId, moreinfolink: saved.moreinfolink,
       }).then(async (r) => {
         if (r.msgId) await repo.update(saved.id, { telegramMsgId: r.msgId });
       }).catch(() => {});

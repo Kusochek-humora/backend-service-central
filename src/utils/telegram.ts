@@ -377,21 +377,19 @@ export async function notifyAlemEventCreated(event: {
 
 export async function sendAlemEvent(event: {
   id: number; title: string; date: string; time: string;
-  photo: string; photoStories?: string; link?: string; yandexSessionId?: string;
+  photo: string; photoStories?: string; link?: string; yandexSessionId?: string; moreinfolink?: string;
 }): Promise<{ msgId?: string; error?: string }> {
   const chatId = process.env.TELEGRAM_ALEM;
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!chatId || !token) return { error: "TELEGRAM_ALEM or TELEGRAM_BOT_TOKEN not set" };
 
-  const ticketUrl = event.yandexSessionId
-    ? `https://alemfest.kz/events/${event.id}`
-    : event.link ?? null;
+  const lines: string[] = [
+    `${fmtDate(event.date)} ${event.time.slice(0, 5)} ${event.title}`,
+  ];
+  if (event.link) lines.push(`Ссылка на виджет:\n${event.link}`);
+  if (event.moreinfolink) lines.push(`Афиша:\n${event.moreinfolink}`);
 
-  const caption = [
-    `${fmtDate(event.date)} ${event.time.slice(0, 5)}`,
-    event.title,
-    ticketUrl ?? "",
-  ].filter(Boolean).join("\n");
+  const caption = lines.join("\n\n");
 
   try {
     const postBuf = await readFileBuffer(event.photo);
