@@ -28,4 +28,7 @@ export class AlemLocation {
 
   @Column({ nullable: true })
   twogis?: string;
+
+  @Column({ nullable: true, type: "int" })
+  order?: number;
 }

@@ -13,4 +13,7 @@ export class AlemCategory {
 
   @Column({ nullable: true })
   name_en?: string;
+
+  @Column({ nullable: true, type: "int" })
+  order?: number;
 }

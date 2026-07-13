@@ -41,6 +41,12 @@ export class AlemEvent {
   link?: string;
 
   @Column({ nullable: true })
+  moreinfolink?: string;
+
+  @Column({ nullable: true, type: "int" })
+  order?: number;
+
+  @Column({ nullable: true })
   yandexSessionId?: string;
 
   @Column({ default: false })

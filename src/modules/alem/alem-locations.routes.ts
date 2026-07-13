@@ -18,6 +18,7 @@ const locationSchema = {
     longitude: { type: ["number", "null"] },
     zoom: { type: ["string", "null"] },
     twogis: { type: ["string", "null"] },
+    order: { type: ["number", "null"] },
   },
 };
 
@@ -32,6 +33,7 @@ const locationBody = {
     longitude: { type: "number" },
     zoom: { type: "string" },
     twogis: { type: "string" },
+    order: { type: "number" },
   },
 };
 
