@@ -353,6 +353,51 @@ export async function updateInternalTour(tour: {
   return sendInternalTour(tour, shows);
 }
 
+export async function sendAlemEvent(event: {
+  id: number; title: string; date: string; time: string;
+  photo: string; photoStories?: string; link?: string; yandexSessionId?: string;
+}): Promise<{ msgId?: string; error?: string }> {
+  const chatId = process.env.TELEGRAM_ALEM;
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!chatId || !token) return { error: "TELEGRAM_ALEM or TELEGRAM_BOT_TOKEN not set" };
+
+  const ticketUrl = event.yandexSessionId
+    ? `https://alemfest.kz/events/${event.id}`
+    : event.link ?? null;
+
+  const caption = [
+    `${fmtDate(event.date)} ${event.time.slice(0, 5)}`,
+    event.title,
+    ticketUrl ?? "",
+  ].filter(Boolean).join("\n");
+
+  try {
+    const postBuf = await readFileBuffer(event.photo);
+    if (!postBuf) return { error: "photo file not found" };
+
+    const postFilename = `${event.date}_${event.title}_пост.jpg`;
+
+    if (event.photoStories) {
+      const storiesBuf = await readFileBuffer(event.photoStories);
+      if (storiesBuf) {
+        const sent = await sendMediaGroup(
+          chatId,
+          { buffer: postBuf, filename: postFilename, caption },
+          { buffer: storiesBuf, filename: `${event.date}_${event.title}_сториз.jpg` },
+        );
+        if (!sent.ok || !sent.result?.[0]) return { error: sent.description ?? "failed to send media group" };
+        return { msgId: String(sent.result[0].message_id) };
+      }
+    }
+
+    const sent = await sendDocument(chatId, postBuf, postFilename, caption) as any;
+    if (!sent.ok) return { error: sent.description ?? "failed to send post document" };
+    return { msgId: String(sent.result!.message_id) };
+  } catch (e) {
+    return { error: String(e) };
+  }
+}
+
 export async function notifyVacancyApply(data: {
   vacancyTitle: string;
   name: string;

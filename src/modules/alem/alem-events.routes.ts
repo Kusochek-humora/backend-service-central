@@ -4,6 +4,7 @@ import { AlemEvent } from "../../db/entities/alem-event.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 import { cacheGet, cacheSet, cacheDelPattern, cacheKey } from "../../utils/cache";
+import { sendAlemEvent } from "../../utils/telegram";
 
 const TTL_ALEM = 120;
 const bearerAuth = { security: [{ bearerAuth: [] }] };
@@ -231,6 +232,17 @@ export async function alemEventsRoutes(app: FastifyInstance) {
     await repo.save(event);
     await cacheDelPattern("alem:*");
     const saved = await repo.findOne({ where: { id: event.id }, relations: { location: true, category: true } });
+
+    if (saved && saved.publishToOrganizerTelegram) {
+      sendAlemEvent({
+        id: saved.id, title: saved.title, date: saved.date, time: saved.time,
+        photo: saved.photo, photoStories: saved.photoStories,
+        link: saved.link, yandexSessionId: saved.yandexSessionId,
+      }).then(async (r) => {
+        if (r.msgId) await repo.update(saved.id, { telegramMsgId: r.msgId });
+      }).catch(() => {});
+    }
+
     return reply.status(201).send(saved);
   });
 

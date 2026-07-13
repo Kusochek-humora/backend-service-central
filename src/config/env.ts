@@ -33,5 +33,6 @@ export const env = {
     botToken:        optional("TELEGRAM_BOT_TOKEN", ""),
     chatId:          optional("TELEGRAM_CHAT_ID", ""),
     internalChatId:  optional("INTERNAL_CHANNEL_ID", ""),
+    alemChatId:      optional("TELEGRAM_ALEM", ""),
   },
 };
