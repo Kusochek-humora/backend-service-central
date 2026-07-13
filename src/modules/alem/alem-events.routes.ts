@@ -112,13 +112,14 @@ export async function alemEventsRoutes(app: FastifyInstance) {
           locationId: { type: "number" },
           isOnMainPage: { type: "boolean" },
           date: { type: "string", description: "YYYY-MM-DD" },
+          language: { type: "string", enum: ["ru", "kz", "en"] },
         },
       },
       response: { 200: { type: "array", items: eventSchema } },
     },
   }, async (request) => {
-    const { categoryId, locationId, isOnMainPage, date } = request.query as {
-      categoryId?: number; locationId?: number; isOnMainPage?: boolean; date?: string;
+    const { categoryId, locationId, isOnMainPage, date, language } = request.query as {
+      categoryId?: number; locationId?: number; isOnMainPage?: boolean; date?: string; language?: string;
     };
     const key = cacheKey("alem:list", request.query as object);
     const cached = await cacheGet(key);
@@ -141,6 +142,7 @@ export async function alemEventsRoutes(app: FastifyInstance) {
     if (categoryId) qb.andWhere("e.categoryId = :categoryId", { categoryId });
     if (locationId) qb.andWhere("e.locationId = :locationId", { locationId });
     if (isOnMainPage !== undefined) qb.andWhere("e.isOnMainPage = :isOnMainPage", { isOnMainPage });
+    if (language) qb.andWhere("e.language = :language", { language });
 
     const result = await qb.orderBy("e.date", "ASC").addOrderBy("e.time", "ASC").getMany();
     await cacheSet(key, result, TTL_ALEM);
@@ -177,14 +179,15 @@ export async function alemEventsRoutes(app: FastifyInstance) {
           locationId: { type: "number" },
           isOnMainPage: { type: "boolean" },
           date: { type: "string", description: "YYYY-MM-DD" },
+          language: { type: "string", enum: ["ru", "kz", "en"] },
         },
       },
       response: { 200: { type: "array", items: eventSchema } },
     },
     onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request) => {
-    const { categoryId, locationId, isOnMainPage, date } = request.query as {
-      categoryId?: number; locationId?: number; isOnMainPage?: boolean; date?: string;
+    const { categoryId, locationId, isOnMainPage, date, language } = request.query as {
+      categoryId?: number; locationId?: number; isOnMainPage?: boolean; date?: string; language?: string;
     };
 
     const qb = repo.createQueryBuilder("e")
@@ -195,6 +198,7 @@ export async function alemEventsRoutes(app: FastifyInstance) {
     if (categoryId) qb.andWhere("e.categoryId = :categoryId", { categoryId });
     if (locationId) qb.andWhere("e.locationId = :locationId", { locationId });
     if (isOnMainPage !== undefined) qb.andWhere("e.isOnMainPage = :isOnMainPage", { isOnMainPage });
+    if (language) qb.andWhere("e.language = :language", { language });
 
     return qb.orderBy("e.date", "ASC").addOrderBy("e.time", "ASC").getMany();
   });
