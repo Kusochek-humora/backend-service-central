@@ -57,6 +57,7 @@ const eventSchema = {
     isSoldOut: { type: "boolean" },
     publishToOrganizerTelegram: { type: "boolean" },
     publishToMainBlock: { type: "boolean" },
+    publishToMainTelegram: { type: "boolean" },
     isOnMainPage: { type: "boolean" },
     telegramMsgId: { type: ["string", "null"] },
     location: locationSchema,
@@ -86,6 +87,7 @@ const eventBodyProperties = {
   isSoldOut: { type: "boolean" },
   publishToOrganizerTelegram: { type: "boolean" },
   publishToMainBlock: { type: "boolean" },
+  publishToMainTelegram: { type: "boolean" },
   isOnMainPage: { type: "boolean" },
   locationId: { type: ["number", "null"] },
   categoryId: { type: ["number", "null"] },
@@ -243,7 +245,7 @@ export async function alemEventsRoutes(app: FastifyInstance) {
       }).catch(() => {});
     }
 
-    if (saved && saved.publishToMainBlock) {
+    if (saved && saved.publishToMainTelegram) {
       notifyAlemEventCreated({
         id: saved.id, title: saved.title, date: saved.date, time: saved.time,
         photo: saved.photo, link: saved.link, yandexSessionId: saved.yandexSessionId,

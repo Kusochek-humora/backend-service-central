@@ -59,6 +59,9 @@ export class AlemEvent {
   publishToMainBlock!: boolean;
 
   @Column({ default: false })
+  publishToMainTelegram!: boolean;
+
+  @Column({ default: false })
   isOnMainPage!: boolean;
 
   @Column({ nullable: true, type: "bigint" })
