@@ -52,7 +52,7 @@ export async function alemLocationsRoutes(app: FastifyInstance) {
   // ADMIN
   app.get("/admin/alem/locations", {
     schema: { tags: ["Alem Admin"], summary: "Все локации", ...bearerAuth, response: { 200: { type: "array", items: locationSchema } } },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async () => repo.find());
 
   app.post("/admin/alem/locations", {
@@ -61,7 +61,7 @@ export async function alemLocationsRoutes(app: FastifyInstance) {
       body: { ...locationBody, required: ["label"] },
       response: { 201: locationSchema },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const loc = repo.create(request.body as Partial<AlemLocation>);
     await repo.save(loc);
@@ -75,7 +75,7 @@ export async function alemLocationsRoutes(app: FastifyInstance) {
       body: locationBody,
       response: { 200: locationSchema, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const loc = await repo.findOneBy({ id: Number(id) });
@@ -91,7 +91,7 @@ export async function alemLocationsRoutes(app: FastifyInstance) {
       params: { type: "object", properties: { id: { type: "number" } } },
       response: { 200: { type: "object", properties: { message: { type: "string" } } }, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const loc = await repo.findOneBy({ id: Number(id) });
