@@ -387,6 +387,7 @@ export async function sendAlemEvent(event: {
     `${fmtDate(event.date)} ${event.time.slice(0, 5)} ${event.title}`,
   ];
   if (event.link) lines.push(`Ссылка на виджет:\n${event.link}`);
+  if (event.yandexSessionId) lines.push(`Alemfest:\nhttps://alemfest.kz/events/${event.id}`);
   if (event.moreinfolink) lines.push(`Афиша:\n${event.moreinfolink}`);
 
   const caption = lines.join("\n\n");
