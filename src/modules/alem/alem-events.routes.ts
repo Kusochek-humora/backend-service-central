@@ -4,7 +4,7 @@ import { AlemEvent } from "../../db/entities/alem-event.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 import { cacheGet, cacheSet, cacheDelPattern, cacheKey } from "../../utils/cache";
-import { sendAlemEvent, notifyAlemEventCreated } from "../../utils/telegram";
+import { sendAlemEvent, notifyAlemEventCreated, deleteMessage } from "../../utils/telegram";
 
 const TTL_ALEM = 120;
 const bearerAuth = { security: [{ bearerAuth: [] }] };
@@ -272,9 +272,34 @@ export async function alemEventsRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const exists = await repo.findOneBy({ id: Number(id) });
     if (!exists) return reply.status(404).send({ message: "Not found" });
+    const oldTelegramMsgId = exists.telegramMsgId;
     await repo.update(Number(id), request.body as Partial<AlemEvent>);
     await cacheDelPattern("alem:*");
-    return repo.findOne({ where: { id: Number(id) }, relations: { location: true, category: true } });
+    const updated = await repo.findOne({ where: { id: Number(id) }, relations: { location: true, category: true } });
+
+    if (updated && updated.publishToOrganizerTelegram) {
+      const alemChatId = process.env.TELEGRAM_ALEM;
+      (async () => {
+        if (oldTelegramMsgId && alemChatId) await deleteMessage(alemChatId, oldTelegramMsgId);
+        const r = await sendAlemEvent({
+          id: updated.id, title: updated.title, date: updated.date, time: updated.time,
+          photo: updated.photo, photoStories: updated.photoStories,
+          link: updated.link, yandexSessionId: updated.yandexSessionId, moreinfolink: updated.moreinfolink,
+        });
+        console.log("[alem/events PUT] sendAlemEvent result:", JSON.stringify(r));
+        if (r.msgId) await repo.update(updated.id, { telegramMsgId: r.msgId });
+      })().catch((e) => console.error("[alem/events PUT] sendAlemEvent error:", e));
+    }
+
+    if (updated && updated.publishToMainTelegram) {
+      notifyAlemEventCreated({
+        id: updated.id, title: updated.title, date: updated.date, time: updated.time,
+        photo: updated.photo, link: updated.link, yandexSessionId: updated.yandexSessionId,
+      }).then((r) => console.log("[alem/events PUT] notifyAlemEventCreated result:", JSON.stringify(r)))
+        .catch((e) => console.error("[alem/events PUT] notifyAlemEventCreated error:", e));
+    }
+
+    return updated;
   });
 
   // ADMIN — удалить
