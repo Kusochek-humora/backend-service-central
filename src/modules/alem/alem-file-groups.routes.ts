@@ -50,7 +50,7 @@ export async function alemFileGroupsRoutes(app: FastifyInstance) {
       tags: ["Alem Admin"], summary: "Список групп фото (активные)", ...bearerAuth,
       response: { 200: { type: "array", items: groupSchema } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async () => {
     const all = await repo.find({ order: { createdAt: "DESC" } });
     const expired = all.filter(isExpired);
@@ -80,7 +80,7 @@ export async function alemFileGroupsRoutes(app: FastifyInstance) {
       },
       response: { 201: groupSchema },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const group = repo.create(request.body as Partial<AlemFileGroup>);
     await repo.save(group);
@@ -106,7 +106,7 @@ export async function alemFileGroupsRoutes(app: FastifyInstance) {
       },
       response: { 200: groupSchema, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const group = await repo.findOneBy({ id: Number(id) });
@@ -122,7 +122,7 @@ export async function alemFileGroupsRoutes(app: FastifyInstance) {
       params: { type: "object", properties: { id: { type: "number" } } },
       response: { 200: { type: "object", properties: { message: { type: "string" } } }, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const group = await repo.findOneBy({ id: Number(id) });

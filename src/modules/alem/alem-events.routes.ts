@@ -178,7 +178,7 @@ export async function alemEventsRoutes(app: FastifyInstance) {
       },
       response: { 200: { type: "array", items: eventSchema } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request) => {
     const { categoryId, locationId, isOnMainPage, date } = request.query as {
       categoryId?: number; locationId?: number; isOnMainPage?: boolean; date?: string;
@@ -203,7 +203,7 @@ export async function alemEventsRoutes(app: FastifyInstance) {
       params: { type: "object", properties: { id: { type: "number" } } },
       response: { 200: eventSchema, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const event = await repo.findOne({ where: { id: Number(id) }, relations: { location: true, category: true } });
@@ -218,7 +218,7 @@ export async function alemEventsRoutes(app: FastifyInstance) {
       body: { type: "object", required: ["title", "photo1", "date", "time"], properties: eventBodyProperties },
       response: { 201: eventSchema },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const event = repo.create(request.body as Partial<AlemEvent>);
     await repo.save(event);
@@ -235,7 +235,7 @@ export async function alemEventsRoutes(app: FastifyInstance) {
       body: { type: "object", properties: eventBodyProperties },
       response: { 200: eventSchema, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const event = await repo.findOneBy({ id: Number(id) });
@@ -253,7 +253,7 @@ export async function alemEventsRoutes(app: FastifyInstance) {
       params: { type: "object", properties: { id: { type: "number" } } },
       response: { 200: { type: "object", properties: { message: { type: "string" } } }, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const event = await repo.findOneBy({ id: Number(id) });

@@ -33,7 +33,7 @@ export async function alemCategoriesRoutes(app: FastifyInstance) {
   // ADMIN
   app.get("/admin/alem/categories", {
     schema: { tags: ["Alem Admin"], summary: "Все категории", ...bearerAuth, response: { 200: { type: "array", items: categorySchema } } },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async () => repo.find());
 
   app.post("/admin/alem/categories", {
@@ -42,7 +42,7 @@ export async function alemCategoriesRoutes(app: FastifyInstance) {
       body: { type: "object", required: ["name"], properties: { name: { type: "string" } } },
       response: { 201: categorySchema },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const cat = repo.create(request.body as Partial<AlemCategory>);
     await repo.save(cat);
@@ -56,7 +56,7 @@ export async function alemCategoriesRoutes(app: FastifyInstance) {
       body: { type: "object", properties: { name: { type: "string" } } },
       response: { 200: categorySchema, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const cat = await repo.findOneBy({ id: Number(id) });
@@ -72,7 +72,7 @@ export async function alemCategoriesRoutes(app: FastifyInstance) {
       params: { type: "object", properties: { id: { type: "number" } } },
       response: { 200: { type: "object", properties: { message: { type: "string" } } }, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
-    onRequest: [jwtGuard, requirePermission(Section.EVENTS)],
+    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const cat = await repo.findOneBy({ id: Number(id) });
