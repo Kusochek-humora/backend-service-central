@@ -6,19 +6,13 @@ export class AlemFileGroup {
   id!: number;
 
   @Column()
-  photo1!: string;
+  photo!: string;
 
   @Column({ nullable: true })
-  photo2?: string;
+  photoStories?: string;
 
   @Column({ nullable: true })
-  photo3?: string;
-
-  @Column({ nullable: true })
-  photo4?: string;
-
-  @Column({ nullable: true })
-  photo5?: string;
+  banner?: string;
 
   @Column({ type: "date" })
   date!: string;

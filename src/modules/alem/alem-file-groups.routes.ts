@@ -13,11 +13,9 @@ const groupSchema = {
   type: "object",
   properties: {
     id: { type: "number" },
-    photo1: { type: "string" },
-    photo2: { type: ["string", "null"] },
-    photo3: { type: ["string", "null"] },
-    photo4: { type: ["string", "null"] },
-    photo5: { type: ["string", "null"] },
+    photo: { type: "string" },
+    photoStories: { type: ["string", "null"] },
+    banner: { type: ["string", "null"] },
     date: { type: "string" },
     time: { type: "string" },
     label: { type: ["string", "null"] },
@@ -32,10 +30,9 @@ function isExpired(g: AlemFileGroup): boolean {
   return g.date < today || (g.date === today && g.time <= currentTime);
 }
 
-async function deleteGroupFiles(g: AlemFileGroup) {
-  for (const photo of [g.photo1, g.photo2, g.photo3, g.photo4, g.photo5]) {
-    if (photo) await fs.unlink(path.join(UPLOAD_DIR, photo.replace(/^\/uploads\//, ""))).catch(() => {});
-  }
+async function deleteFile(filePath: string) {
+  if (!filePath) return;
+  await fs.unlink(path.join(UPLOAD_DIR, filePath.replace(/^\/uploads\//, ""))).catch(() => {});
 }
 
 export async function alemFileGroupsRoutes(app: FastifyInstance) {
@@ -52,10 +49,12 @@ export async function alemFileGroupsRoutes(app: FastifyInstance) {
     },
     onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async () => {
-    const all = await repo.find({ order: { createdAt: "DESC" } });
+    const all = await repo.find({ order: { date: "ASC", time: "ASC" } });
     const expired = all.filter(isExpired);
     for (const g of expired) {
-      await deleteGroupFiles(g);
+      await deleteFile(g.photo);
+      await deleteFile(g.photoStories ?? "");
+      await deleteFile(g.banner ?? "");
       await repo.remove(g);
     }
     return all.filter(g => !isExpired(g));
@@ -66,15 +65,13 @@ export async function alemFileGroupsRoutes(app: FastifyInstance) {
       tags: ["Alem Admin"], summary: "Создать группу фото", ...bearerAuth,
       body: {
         type: "object",
-        required: ["photo1", "date", "time"],
+        required: ["photo", "date", "time"],
         properties: {
-          photo1: { type: "string" },
-          photo2: { type: "string" },
-          photo3: { type: "string" },
-          photo4: { type: "string" },
-          photo5: { type: "string" },
-          date: { type: "string" },
-          time: { type: "string" },
+          photo: { type: "string" },
+          photoStories: { type: "string" },
+          banner: { type: "string" },
+          date: { type: "string", description: "YYYY-MM-DD" },
+          time: { type: "string", description: "HH:MM" },
           label: { type: "string" },
         },
       },
@@ -94,11 +91,9 @@ export async function alemFileGroupsRoutes(app: FastifyInstance) {
       body: {
         type: "object",
         properties: {
-          photo1: { type: "string" },
-          photo2: { type: "string" },
-          photo3: { type: "string" },
-          photo4: { type: "string" },
-          photo5: { type: "string" },
+          photo: { type: "string" },
+          photoStories: { type: "string" },
+          banner: { type: "string" },
           date: { type: "string" },
           time: { type: "string" },
           label: { type: "string" },
@@ -127,7 +122,9 @@ export async function alemFileGroupsRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const group = await repo.findOneBy({ id: Number(id) });
     if (!group) return reply.status(404).send({ message: "Not found" });
-    await deleteGroupFiles(group);
+    await deleteFile(group.photo);
+    await deleteFile(group.photoStories ?? "");
+    await deleteFile(group.banner ?? "");
     await repo.remove(group);
     return { message: "Deleted" };
   });
