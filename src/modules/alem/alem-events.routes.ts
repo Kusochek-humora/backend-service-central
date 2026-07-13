@@ -28,7 +28,9 @@ const categorySchema = {
   nullable: true,
   properties: {
     id: { type: "number" },
-    name: { type: "string" },
+    name_ru: { type: "string" },
+    name_kz: { type: ["string", "null"] },
+    name_en: { type: ["string", "null"] },
   },
 };
 

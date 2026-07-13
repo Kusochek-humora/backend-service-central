@@ -10,7 +10,9 @@ const categorySchema = {
   type: "object",
   properties: {
     id: { type: "number" },
-    name: { type: "string" },
+    name_ru: { type: "string" },
+    name_kz: { type: ["string", "null"] },
+    name_en: { type: ["string", "null"] },
   },
 };
 
@@ -39,7 +41,7 @@ export async function alemCategoriesRoutes(app: FastifyInstance) {
   app.post("/admin/alem/categories", {
     schema: {
       tags: ["Alem Admin"], summary: "Создать категорию", ...bearerAuth,
-      body: { type: "object", required: ["name"], properties: { name: { type: "string" } } },
+      body: { type: "object", required: ["name_ru"], properties: { name_ru: { type: "string" }, name_kz: { type: "string" }, name_en: { type: "string" } } },
       response: { 201: categorySchema },
     },
     onRequest: [jwtGuard, requirePermission(Section.ALEM)],
@@ -53,7 +55,7 @@ export async function alemCategoriesRoutes(app: FastifyInstance) {
     schema: {
       tags: ["Alem Admin"], summary: "Обновить категорию", ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
-      body: { type: "object", properties: { name: { type: "string" } } },
+      body: { type: "object", properties: { name_ru: { type: "string" }, name_kz: { type: "string" }, name_en: { type: "string" } } },
       response: { 200: categorySchema, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
     onRequest: [jwtGuard, requirePermission(Section.ALEM)],
