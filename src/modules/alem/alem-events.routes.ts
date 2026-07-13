@@ -241,12 +241,11 @@ export async function alemEventsRoutes(app: FastifyInstance) {
     onRequest: [jwtGuard, requirePermission(Section.ALEM)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const event = await repo.findOneBy({ id: Number(id) });
-    if (!event) return reply.status(404).send({ message: "Not found" });
-    repo.merge(event, request.body as Partial<AlemEvent>);
-    await repo.save(event);
+    const exists = await repo.findOneBy({ id: Number(id) });
+    if (!exists) return reply.status(404).send({ message: "Not found" });
+    await repo.update(Number(id), request.body as Partial<AlemEvent>);
     await cacheDelPattern("alem:*");
-    return repo.findOne({ where: { id: event.id }, relations: { location: true, category: true } });
+    return repo.findOne({ where: { id: Number(id) }, relations: { location: true, category: true } });
   });
 
   // ADMIN — удалить
