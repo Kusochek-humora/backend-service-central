@@ -17,7 +17,7 @@ export class SeedAlemEvents1783700000000 implements MigrationInterface {
     // Events — photo1 is placeholder, update via admin panel
     await queryRunner.query(`
       INSERT INTO "alem_events"
-        ("title", "photo1", "date", "time", "language", "link", "isSoldOut", "publishToOrganizerTelegram", "publishToMainBlock", "isOnMainPage", "locationId", "categoryId")
+        ("title", "photo", "date", "time", "language", "link", "isSoldOut", "publishToOrganizerTelegram", "publishToMainBlock", "isOnMainPage", "locationId", "categoryId")
       VALUES
         (
           'Тимур Каргинов', '/uploads/alem/placeholder.jpg', '2026-09-18', '21:30:00', 'ru',

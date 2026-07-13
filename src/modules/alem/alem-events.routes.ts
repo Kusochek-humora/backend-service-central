@@ -40,11 +40,9 @@ const eventSchema = {
   properties: {
     id: { type: "number" },
     title: { type: "string" },
-    photo1: { type: "string" },
-    photo2: { type: ["string", "null"] },
-    photo3: { type: ["string", "null"] },
-    photo4: { type: ["string", "null"] },
-    photo5: { type: ["string", "null"] },
+    photo: { type: "string" },
+    photoStories: { type: ["string", "null"] },
+    banner: { type: ["string", "null"] },
     date: { type: "string" },
     time: { type: "string" },
     language: { type: "string", enum: ["ru", "kz", "en"] },
@@ -69,11 +67,9 @@ const eventSchema = {
 
 const eventBodyProperties = {
   title: { type: "string" },
-  photo1: { type: "string" },
-  photo2: { type: "string" },
-  photo3: { type: "string" },
-  photo4: { type: "string" },
-  photo5: { type: "string" },
+  photo: { type: "string" },
+  photoStories: { type: "string" },
+  banner: { type: "string" },
   date: { type: "string" },
   time: { type: "string" },
   language: { type: "string", enum: ["ru", "kz", "en"] },
@@ -222,7 +218,7 @@ export async function alemEventsRoutes(app: FastifyInstance) {
   app.post("/admin/alem/events", {
     schema: {
       tags: ["Alem Admin"], summary: "Создать мероприятие Alem", ...bearerAuth,
-      body: { type: "object", required: ["title", "photo1", "date", "time"], properties: eventBodyProperties },
+      body: { type: "object", required: ["title", "photo", "date", "time"], properties: eventBodyProperties },
       response: { 201: eventSchema },
     },
     onRequest: [jwtGuard, requirePermission(Section.ALEM)],
