@@ -25,4 +25,7 @@ export class AlemLocation {
 
   @Column({ nullable: true })
   zoom?: string;
+
+  @Column({ nullable: true })
+  twogis?: string;
 }

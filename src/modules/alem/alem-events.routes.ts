@@ -20,6 +20,7 @@ const locationSchema = {
     latitude: { type: ["number", "null"] },
     longitude: { type: ["number", "null"] },
     zoom: { type: ["string", "null"] },
+    twogis: { type: ["string", "null"] },
   },
 };
 
