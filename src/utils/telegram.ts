@@ -353,6 +353,28 @@ export async function updateInternalTour(tour: {
   return sendInternalTour(tour, shows);
 }
 
+export async function notifyAlemEventCreated(event: {
+  id: number; title: string; date: string; time: string;
+  photo: string; link?: string; yandexSessionId?: string;
+}): Promise<TelegramResult> {
+  const chatId = process.env.TELEGRAM_CHAT_NEWS;
+  if (!chatId) return { sent: false, error: "TELEGRAM_CHAT_NEWS not set" };
+
+  const ticketUrl = event.link
+    ? event.link
+    : event.yandexSessionId
+      ? `https://alemfest.kz/events/${event.id}`
+      : null;
+
+  const lines = [
+    `🎤 ${event.title}\n📅 ${fmtDate(event.date)}, ${event.time.slice(0, 5)}`,
+    ticketUrl ? `<a href="${ticketUrl}">Билеты</a>` : null,
+    `#alem #alemfest2026`,
+  ].filter((l) => l !== null).join("\n\n");
+
+  return sendTelegram(chatId, lines, event.photo, "HTML");
+}
+
 export async function sendAlemEvent(event: {
   id: number; title: string; date: string; time: string;
   photo: string; photoStories?: string; link?: string; yandexSessionId?: string;
