@@ -82,8 +82,8 @@ const eventBodyProperties = {
   publishToOrganizerTelegram: { type: "boolean" },
   publishToMainBlock: { type: "boolean" },
   isOnMainPage: { type: "boolean" },
-  locationId: { type: "number" },
-  categoryId: { type: "number" },
+  locationId: { type: ["number", "null"] },
+  categoryId: { type: ["number", "null"] },
 };
 
 const ALMATY_OFFSET_MS = 5 * 60 * 60 * 1000;
