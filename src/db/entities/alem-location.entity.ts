@@ -17,10 +17,10 @@ export class AlemLocation {
   @Column({ nullable: true })
   address_en?: string;
 
-  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true })
+  @Column({ type: "float", nullable: true })
   latitude?: number;
 
-  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true })
+  @Column({ type: "float", nullable: true })
   longitude?: number;
 
   @Column({ nullable: true })
