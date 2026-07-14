@@ -173,13 +173,13 @@ export async function menuCombosRoutes(app: FastifyInstance) {
     schema: {
       tags: ["Menu Admin"], summary: "Удалить комбо", ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
-      response: { 200: { type: "object", properties: { message: { type: "string" } } } },
+      response: { 200: { type: "object", properties: { message: { type: "string" } } }, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
     onRequest: [jwtGuard, requirePermission(Section.MENU)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const combo = await comboRepo.findOneBy({ id: Number(id) });
-    if (!combo) return reply.status(404).send({ message: "Not found" });
+    if (!combo) return (reply as any).status(404).send({ message: "Not found" });
     await comboRepo.remove(combo);
     return { message: "Deleted" };
   });
@@ -201,7 +201,7 @@ export async function menuCombosRoutes(app: FastifyInstance) {
     onRequest: [jwtGuard, requirePermission(Section.MENU)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const slot = slotRepo.create({ ...(request.body as any), comboId: Number(id) });
+    const slot = slotRepo.create({ ...(request.body as any), comboId: Number(id) }) as unknown as MenuComboSlot;
     await slotRepo.save(slot);
     return reply.status(201).send(await slotRepo.findOneBy({ id: slot.id }));
   });
@@ -211,13 +211,13 @@ export async function menuCombosRoutes(app: FastifyInstance) {
     schema: {
       tags: ["Menu Admin"], summary: "Удалить слот", ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
-      response: { 200: { type: "object", properties: { message: { type: "string" } } } },
+      response: { 200: { type: "object", properties: { message: { type: "string" } } }, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
     onRequest: [jwtGuard, requirePermission(Section.MENU)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const slot = await slotRepo.findOneBy({ id: Number(id) });
-    if (!slot) return reply.status(404).send({ message: "Not found" });
+    if (!slot) return (reply as any).status(404).send({ message: "Not found" });
     await slotRepo.remove(slot);
     return { message: "Deleted" };
   });
@@ -233,7 +233,7 @@ export async function menuCombosRoutes(app: FastifyInstance) {
     onRequest: [jwtGuard, requirePermission(Section.MENU)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const option = optionRepo.create({ slotId: Number(id), menuItemId: (request.body as any).menuItemId });
+    const option = optionRepo.create({ slotId: Number(id), menuItemId: (request.body as any).menuItemId }) as unknown as MenuComboSlotOption;
     await optionRepo.save(option);
     return reply.status(201).send(await optionRepo.findOneBy({ id: option.id }));
   });
@@ -243,13 +243,13 @@ export async function menuCombosRoutes(app: FastifyInstance) {
     schema: {
       tags: ["Menu Admin"], summary: "Удалить опцию из слота", ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
-      response: { 200: { type: "object", properties: { message: { type: "string" } } } },
+      response: { 200: { type: "object", properties: { message: { type: "string" } } }, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
     onRequest: [jwtGuard, requirePermission(Section.MENU)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const option = await optionRepo.findOneBy({ id: Number(id) });
-    if (!option) return reply.status(404).send({ message: "Not found" });
+    if (!option) return (reply as any).status(404).send({ message: "Not found" });
     await optionRepo.remove(option);
     return { message: "Deleted" };
   });

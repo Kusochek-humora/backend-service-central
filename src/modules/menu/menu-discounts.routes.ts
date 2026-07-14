@@ -103,13 +103,13 @@ export async function menuDiscountsRoutes(app: FastifyInstance) {
     schema: {
       tags: ["Menu Admin"], summary: "Удалить скидку", ...bearerAuth,
       params: { type: "object", properties: { id: { type: "number" } } },
-      response: { 200: { type: "object", properties: { message: { type: "string" } } } },
+      response: { 200: { type: "object", properties: { message: { type: "string" } } }, 404: { type: "object", properties: { message: { type: "string" } } } },
     },
     onRequest: [jwtGuard, requirePermission(Section.MENU)],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const discount = await repo.findOneBy({ id: Number(id) });
-    if (!discount) return reply.status(404).send({ message: "Not found" });
+    if (!discount) return (reply as any).status(404).send({ message: "Not found" });
     await repo.remove(discount);
     return { message: "Deleted" };
   });
