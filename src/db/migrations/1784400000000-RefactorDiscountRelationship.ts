@@ -20,13 +20,11 @@ export class RefactorDiscountRelationship1784400000000 implements MigrationInter
       );
     }
 
-    // Удаляем старые столбцы из menu_discounts
+    // Удаляем только menuItemId из menu_discounts (comboId оставляем — используется для скидок на комбо)
     await queryRunner.query(`ALTER TABLE "menu_discounts" DROP COLUMN IF EXISTS "menuItemId"`);
-    await queryRunner.query(`ALTER TABLE "menu_discounts" DROP COLUMN IF EXISTS "comboId"`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "menu_discounts" ADD COLUMN IF NOT EXISTS "comboId" int`);
     await queryRunner.query(`ALTER TABLE "menu_discounts" ADD COLUMN IF NOT EXISTS "menuItemId" int`);
     await queryRunner.query(`ALTER TABLE "menu_items" DROP COLUMN IF EXISTS "discountId"`);
     await queryRunner.query(`ALTER TABLE "menu_items" ADD COLUMN IF NOT EXISTS "discount" int`);
