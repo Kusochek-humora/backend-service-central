@@ -33,12 +33,6 @@ export class MenuDiscount {
   @Column({ default: true })
   isActive!: boolean;
 
-  @Column({ nullable: true })
-  menuItemId?: number;
-
-  @Column({ nullable: true })
-  comboId?: number;
-
   @CreateDateColumn()
   createdAt!: Date;
 

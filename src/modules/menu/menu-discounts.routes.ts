@@ -18,8 +18,6 @@ const discountSchema = {
     validFrom: { type: ["string", "null"] },
     validTo: { type: ["string", "null"] },
     isActive: { type: "boolean" },
-    menuItemId: { type: ["number", "null"] },
-    comboId: { type: ["number", "null"] },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
   },
@@ -34,8 +32,6 @@ const discountBodyProperties = {
   validFrom: { type: "string" },
   validTo: { type: "string" },
   isActive: { type: "boolean" },
-  menuItemId: { type: ["number", "null"] },
-  comboId: { type: ["number", "null"] },
 };
 
 export async function menuDiscountsRoutes(app: FastifyInstance) {

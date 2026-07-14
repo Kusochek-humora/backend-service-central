@@ -57,8 +57,20 @@ const itemSchema = {
     ingredients_en: { type: ["string", "null"] },
     isAvailable: { type: "boolean" },
     isNew: { type: "boolean" },
-    discount: { type: ["number", "null"] },
     order: { type: "number" },
+    discountId: { type: ["number", "null"] },
+    discount: {
+      nullable: true, type: "object",
+      properties: {
+        id: { type: "number" },
+        type: { type: "string" },
+        value: { type: "number" },
+        label_ru: { type: ["string", "null"] },
+        label_kz: { type: ["string", "null"] },
+        label_en: { type: ["string", "null"] },
+        isActive: { type: "boolean" },
+      },
+    },
     categoryId: { type: "number" },
     category: subcategorySchema,
     avgRating: { type: ["number", "null"] },
@@ -83,8 +95,8 @@ const itemBodyProperties = {
   ingredients_en: { type: "string" },
   isAvailable: { type: "boolean" },
   isNew: { type: "boolean" },
-  discount: { type: "number", description: "Скидка в процентах (0-100)" },
   order: { type: "number" },
+  discountId: { type: ["number", "null"] },
   categoryId: { type: "number", description: "ID подкатегории (или главной если подкатегорий нет)" },
 };
 
@@ -176,13 +188,7 @@ export async function menuRoutes(app: FastifyInstance) {
     if (categoryId) qb.andWhere("i.categoryId = :categoryId", { categoryId });
 
     if (hasDiscount) {
-      qb.andWhere(`EXISTS (
-        SELECT 1 FROM menu_discounts d
-        WHERE d."menuItemId" = i.id
-          AND d."isActive" = true
-          AND (d."validFrom" IS NULL OR d."validFrom" <= :today)
-          AND (d."validTo" IS NULL OR d."validTo" >= :today)
-      )`, { today });
+      qb.innerJoin("menu_discounts", "d", `i."discountId" = d.id AND d."isActive" = true AND (d."validFrom" IS NULL OR d."validFrom" <= :today) AND (d."validTo" IS NULL OR d."validTo" >= :today)`, { today });
     }
 
     const items = await qb.orderBy("i.order", "ASC").getMany();

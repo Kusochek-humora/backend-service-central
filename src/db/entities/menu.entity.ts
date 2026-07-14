@@ -8,6 +8,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from "typeorm";
+import { MenuDiscount } from "./menu-combo.entity";
 
 @Entity("menu_categories")
 export class MenuCategory {
@@ -99,11 +100,15 @@ export class MenuItem {
   @Column({ default: false })
   isNew!: boolean;
 
-  @Column({ nullable: true, type: "int" })
-  discount?: number;
-
   @Column({ default: 0 })
   order!: number;
+
+  @Column({ nullable: true })
+  discountId?: number;
+
+  @ManyToOne(() => MenuDiscount, { nullable: true, eager: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "discountId" })
+  discount?: MenuDiscount;
 
   @ManyToOne(() => MenuCategory, { nullable: false, eager: true, onDelete: "CASCADE" })
   @JoinColumn({ name: "categoryId" })
