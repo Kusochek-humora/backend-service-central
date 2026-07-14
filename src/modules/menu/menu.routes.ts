@@ -152,6 +152,7 @@ export async function menuRoutes(app: FastifyInstance) {
         type: "object",
         properties: {
           categoryId: { type: "number", description: "ID категории или подкатегории" },
+          hasDiscount: { type: "boolean", description: "Только позиции со скидкой" },
         },
       },
       response: {
@@ -159,10 +160,12 @@ export async function menuRoutes(app: FastifyInstance) {
       },
     },
   }, async (request) => {
-    const { categoryId } = request.query as { categoryId?: number };
-    const key = cacheKey("menu:list", { categoryId });
+    const { categoryId, hasDiscount } = request.query as { categoryId?: number; hasDiscount?: boolean };
+    const key = cacheKey("menu:list", { categoryId, hasDiscount });
     const cached = await cacheGet(key);
     if (cached) return cached;
+
+    const today = new Date().toISOString().split("T")[0];
 
     const qb = itemRepo.createQueryBuilder("i")
       .leftJoinAndSelect("i.category", "category")
@@ -171,6 +174,16 @@ export async function menuRoutes(app: FastifyInstance) {
       .andWhere("category.isPublic = true");
 
     if (categoryId) qb.andWhere("i.categoryId = :categoryId", { categoryId });
+
+    if (hasDiscount) {
+      qb.andWhere(`EXISTS (
+        SELECT 1 FROM menu_discounts d
+        WHERE d."menuItemId" = i.id
+          AND d."isActive" = true
+          AND (d."validFrom" IS NULL OR d."validFrom" <= :today)
+          AND (d."validTo" IS NULL OR d."validTo" >= :today)
+      )`, { today });
+    }
 
     const items = await qb.orderBy("i.order", "ASC").getMany();
     const result = await withRatings(items);
