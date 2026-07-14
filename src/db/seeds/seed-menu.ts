@@ -30,7 +30,7 @@ const run = async () => {
       volume?: string;
       weight?: string;
       name_en?: string;
-      discount?: number;
+      discountId?: number;
     } = {}
   ) => {
     const existing = opts.volume
@@ -44,7 +44,7 @@ const run = async () => {
       existing.description_kz = opts.description_kz ?? existing.description_kz;
       existing.description_en = opts.description_en ?? existing.description_en;
       existing.name_en = opts.name_en ?? existing.name_en;
-      if (opts.discount !== undefined) existing.discount = opts.discount;
+      if (opts.discountId !== undefined) existing.discountId = opts.discountId;
       await itemRepo.save(existing);
       console.log(`  ~ ${name_ru}`);
       return;
@@ -62,7 +62,7 @@ const run = async () => {
       volume: opts.volume,
       weight: opts.weight,
       price,
-      discount: opts.discount,
+      discountId: opts.discountId,
       photo: "",
       isAvailable: true,
       isNew: false,
@@ -89,7 +89,7 @@ const run = async () => {
     description_ru: "Хрустящий картофель фри щедро посыпан крошкой копчёного курта — казахского сыра с дымным характером. Подаётся с домашним сырным соусом.",
     description_kz: "Хрустящий картоп фри ысталған құрт ұнтағымен мол себілген — тұздықты, дымды дәммен. Үй ірімшік соусымен беріледі.",
     description_en: "Crispy fries generously topped with smoked kurt crumbs — a Kazakh cheese with a smoky, salty kick. Served with homemade cheese sauce.",
-    discount: 10,
+    discountId: 10,
   });
   await item(zakuski.id, 2, "Пирожки с томленым цыпленком и сыром", "Пісірілген тауық еті мен ірімшікті пирожки", 2600, {
     name_en: "Chicken & cheese pirozhki",
@@ -102,7 +102,7 @@ const run = async () => {
     description_ru: "Сочные пирожки с рубленой говядиной, луком и специями в золотистой корочке. Подаются с насыщенным сырным соусом — простой вкус, который не надоедает.",
     description_kz: "Туралған сиыр еті, пияз және дәмдеуіштер толтырылған шырынды пирожки, алтын қабықша ішінде. Қанық ірімшік соусымен беріледі.",
     description_en: "Juicy pirozhki filled with minced beef, onion and spices in a golden crust. Served with a rich cheese sauce.",
-    discount: 15,
+    discountId: 15,
   });
   await item(zakuski.id, 4, "Куриный попкорн", "Тауық попкорны", 2800, {
     name_en: "Chicken popcorn",
@@ -115,7 +115,7 @@ const run = async () => {
     description_ru: "Три поджаренных тоста на выбор: с лососем и каперсами, с печёными перцами и рикоттой и с томатом конфи и базиликом. Элегантная закуска в итальянском стиле.",
     description_kz: "Үш қуырылған тост таңдауға: лосось пен каперспен, пісірілген бұрыш пен рикоттамен және томат конфи мен базиликпен. Итальяндық стильдегі нәзік тағам.",
     description_en: "Three toasted crostini: salmon & capers, roasted peppers & ricotta, and tomato confit & basil. An elegant Italian-style starter.",
-    discount: 10,
+    discountId: 10,
   });
   await item(zakuski.id, 6, "Деревенский салат", "Ауыл салаты", 2400, {
     name_en: "Village salad",
@@ -145,7 +145,7 @@ const run = async () => {
     description_kz: "Ысталған жылқы еті жая, орман саңырауқұлақтары және ысталған құрт ұнтағы жұқа қамырда. Терең қазақстандық сипаттағы ерекше үйлесім.",
     description_en: "Smoked horse meat zhaya, forest mushrooms and smoked kurt crumbs on thin dough. An unusual combination with a deep Kazakh character.",
     volume: "Половина",
-    discount: 10,
+    discountId: 10,
   });
   await item(pizza.id, 4, "Жая и грибы", "Жая мен саңырауқұлақ", 5400, {
     name_en: "Zhaya & mushrooms",
@@ -153,7 +153,7 @@ const run = async () => {
     description_kz: "Ысталған жылқы еті жая, орман саңырауқұлақтары және ысталған құрт ұнтағы жұқа қамырда. Терең қазақстандық сипаттағы ерекше үйлесім.",
     description_en: "Smoked horse meat zhaya, forest mushrooms and smoked kurt crumbs on thin dough. An unusual combination with a deep Kazakh character.",
     volume: "Целая",
-    discount: 10,
+    discountId: 10,
   });
   await item(pizza.id, 5, "4 сыра", "4 ірімшік", 2600, {
     name_en: "4 cheeses",
@@ -196,7 +196,7 @@ const run = async () => {
     description_ru: "Сочная говяжья котлета, плавленый чеддер, свежие овощи и кетчуп в мягкой булке. Подаётся с золотистым фри. Не нужно придумывать ничего лучше.",
     description_kz: "Шырынды сиыр еті котлеті, балқыма чеддер, жаңа көкөністер және кетчуп жұмсақ бөлкеде. Алтын фримен беріледі. Одан жақсыны ойлап табудың қажеті жоқ.",
     description_en: "Juicy beef patty, melted cheddar, fresh vegetables and ketchup in a soft bun. Served with golden fries. You don't need to imagine anything better.",
-    discount: 10,
+    discountId: 10,
   });
   await item(burgers.id, 3, "Сэндвич с копченой жая и сыром", "Ысталған жая мен ірімшікті сэндвич", 3600, {
     name_en: "Smoked zhaya & cheese sandwich",
@@ -223,7 +223,7 @@ const run = async () => {
     description_ru: "Маринованный цыплёнок на шпажке, запечённый до румяной корочки. Подаётся на пышной йогуртовой лепёшке с соусом дзадзыки — свежим, с огурцом и мятой.",
     description_kz: "Маринадталған тауықша сауықта алтын қабықшаға дейін пісірілген. Қияр мен жалбыздан жасалған дзадзыки соусымен пышпақ йогурт нанында беріледі.",
     description_en: "Marinated chicken skewer roasted to a golden crust. Served on a fluffy yogurt flatbread with tzatziki sauce — fresh, with cucumber and mint.",
-    discount: 15,
+    discountId: 15,
   });
   await item(hot.id, 3, "Спагетти болоньезе", "Спагетти болоньезе", 3600, {
     name_en: "Spaghetti Bolognese",
@@ -236,7 +236,7 @@ const run = async () => {
     description_ru: "Паста с нежными кусочками куриного филе в бархатистом сливочном соусе с чесноком и пармезаном. Согревает и насыщает.",
     description_kz: "Сарымсақ пен пармезанмен жасалған бархатты кремді соустағы нәзік тауық филесі бөліктерімен паста. Жылытады және қанықтырады.",
     description_en: "Pasta with tender chicken fillet pieces in a velvety cream sauce with garlic and parmesan. Warming and satisfying.",
-    discount: 10,
+    discountId: 10,
   });
 
   console.log("Seeding Десерты...");
@@ -245,7 +245,7 @@ const run = async () => {
     description_ru: "Нежный сливочный чизкейк с карамелизованной верхушкой и тающей серединой. Соленая мисо карамель добавляет глубину и неожиданную пикантность.",
     description_kz: "Карамельденген үстімен және балқитын ортасымен нәзік кремді чизкейк. Тұзды мисо карамель тереңдік пен күтпеген дәм қосады.",
     description_en: "Creamy cheesecake with a caramelised top and a melting centre. Salted miso caramel adds depth and an unexpected savoury note.",
-    discount: 10,
+    discountId: 10,
   });
   await item(desserts.id, 2, "Яблочный крамбл", "Алмалы крамбл", 3500, {
     name_en: "Apple crumble",
@@ -326,7 +326,7 @@ const run = async () => {
     description_kz: "Green Room фирмалық лимонады: жер дәмді матча, цитрусты юдзу және нәзік кокос. Нәзік тепе-теңдікті сақтау үшін газсыз беріледі.",
     description_en: "Green Room signature lemonade: earthy matcha, citrusy yuzu and gentle coconut. Served still to preserve the delicate balance.",
     volume: "0.25 л",
-    discount: 10,
+    discountId: 10,
   });
   await item(lemonades.id, 2, "Матча-Юдзу-Кокос", "Матча-Юдзу-Кокос", 3490, {
     name_en: "Matcha-Yuzu-Coconut",
@@ -334,7 +334,7 @@ const run = async () => {
     description_kz: "Green Room фирмалық лимонады: жер дәмді матча, цитрусты юдзу және нәзік кокос. Нәзік тепе-теңдікті сақтау үшін газсыз беріледі.",
     description_en: "Green Room signature lemonade: earthy matcha, citrusy yuzu and gentle coconut. Served still to preserve the delicate balance.",
     volume: "0.8 л",
-    discount: 10,
+    discountId: 10,
   });
   await item(lemonades.id, 3, "Манго-Маракуйя", "Манго-Маракуйя", 1490, {
     name_en: "Mango-Passion Fruit",
@@ -414,7 +414,7 @@ const run = async () => {
     description_kz: "Орман жидектері, қылқан жапырақты ноталар және тайганың аздаған жабайы рухы. Табиғи, сиропсыз, іштен жылытады.",
     description_en: "Forest berries, pine notes and a touch of wild taiga spirit. Natural, no syrups, warms from within.",
     volume: "0.3 л",
-    discount: 10,
+    discountId: 10,
   });
   await item(teas.id, 6, "Таёжный ягодный", "Тайга жидегі", 2790, {
     name_en: "Taiga berry tea",
@@ -422,7 +422,7 @@ const run = async () => {
     description_kz: "Орман жидектері, қылқан жапырақты ноталар және тайганың аздаған жабайы рухы. Табиғи, сиропсыз, іштен жылытады.",
     description_en: "Forest berries, pine notes and a touch of wild taiga spirit. Natural, no syrups, warms from within.",
     volume: "0.8 л",
-    discount: 10,
+    discountId: 10,
   });
   await item(teas.id, 7, "Травы-мёд-специи", "Шөп-бал-дәмдеуіш", 990, {
     name_en: "Herbs-honey-spices",
@@ -475,7 +475,7 @@ const run = async () => {
     description_ru: "Классический жареный арахис с морской солью. Простой, хрустящий, как надо.",
     description_kz: "Теңіз тұзымен классикалық қуырылған жержаңғақ. Қарапайым, хрустящий, керемет.",
     description_en: "Classic roasted peanuts with sea salt. Simple, crunchy, just right.",
-    discount: 10,
+    discountId: 10,
   });
   await item(snacks.id, 3, "Жареный кешью", "Қуырылған кешью", 2290, {
     name_en: "Roasted cashews",
