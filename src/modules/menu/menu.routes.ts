@@ -404,7 +404,7 @@ export async function menuRoutes(app: FastifyInstance) {
       ...bearerAuth,
       body: {
         type: "object",
-        required: ["name_ru", "name_kz", "price", "photo"],
+        required: ["name_ru", "name_kz", "price"],
         properties: itemBodyProperties,
       },
       response: {

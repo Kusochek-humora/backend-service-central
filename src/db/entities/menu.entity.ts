@@ -82,8 +82,8 @@ export class MenuItem {
   @Column({ type: "decimal", precision: 10, scale: 2 })
   price!: number;
 
-  @Column()
-  photo!: string;
+  @Column({ nullable: true })
+  photo?: string;
 
   @Column({ type: "text", array: true, default: "{}" })
   photos!: string[];
