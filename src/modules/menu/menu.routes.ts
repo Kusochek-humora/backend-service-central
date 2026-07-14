@@ -182,6 +182,7 @@ export async function menuRoutes(app: FastifyInstance) {
     const qb = itemRepo.createQueryBuilder("i")
       .leftJoinAndSelect("i.category", "category")
       .leftJoinAndSelect("category.parent", "parent")
+      .leftJoinAndSelect("i.discount", "discount")
       .where("i.isAvailable = true")
       .andWhere("category.isPublic = true");
 
@@ -215,6 +216,7 @@ export async function menuRoutes(app: FastifyInstance) {
     const item = await itemRepo.createQueryBuilder("i")
       .leftJoinAndSelect("i.category", "category")
       .leftJoinAndSelect("category.parent", "parent")
+      .leftJoinAndSelect("i.discount", "discount")
       .where("i.id = :id AND i.isAvailable = true", { id: Number(id) })
       .getOne();
     if (!item) return reply.status(404).send({ message: "Not found" });
@@ -264,6 +266,7 @@ export async function menuRoutes(app: FastifyInstance) {
     const qb = itemRepo.createQueryBuilder("i")
       .leftJoinAndSelect("i.category", "category")
       .leftJoinAndSelect("category.parent", "parent")
+      .leftJoinAndSelect("i.discount", "discount")
       .where("i.isAvailable = true");
 
     if (categoryId) qb.andWhere("i.categoryId = :categoryId", { categoryId });
@@ -391,7 +394,8 @@ export async function menuRoutes(app: FastifyInstance) {
     const { categoryId } = request.query as { categoryId?: number };
     const qb = itemRepo.createQueryBuilder("i")
       .leftJoinAndSelect("i.category", "category")
-      .leftJoinAndSelect("category.parent", "parent");
+      .leftJoinAndSelect("category.parent", "parent")
+      .leftJoinAndSelect("i.discount", "discount");
     if (categoryId) qb.where("i.categoryId = :categoryId", { categoryId });
     const items = await qb.orderBy("i.order", "ASC").getMany();
     return withRatings(items);
