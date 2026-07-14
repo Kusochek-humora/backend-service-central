@@ -58,7 +58,6 @@ const itemSchema = {
     isAvailable: { type: "boolean" },
     isNew: { type: "boolean" },
     order: { type: "number" },
-    discountId: { type: ["number", "null"] },
     discount: {
       nullable: true, type: "object",
       properties: {
