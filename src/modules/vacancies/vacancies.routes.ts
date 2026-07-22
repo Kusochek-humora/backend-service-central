@@ -31,7 +31,7 @@ const vacancyBodyProperties = {
   description_ru: { type: "string" },
   description_kz: { type: "string" },
   description_en: { type: "string" },
-  salary: { type: "string" },
+  salary: { type: ["string", "null"] },
   isPublished: { type: "boolean" },
   order: { type: "number" },
 };
