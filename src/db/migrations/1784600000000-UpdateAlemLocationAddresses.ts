@@ -8,6 +8,7 @@ export class UpdateAlemLocationAddresses1784600000000 implements MigrationInterf
       { name: "Тотальный театр",             address_kz: "Шевченко к-сі, 114" },
       { name: "Almaty Central Standup Club", address_kz: "Қабанбай батыр к-сі, 71" },
       { name: "Dostyk Hall",                 address_kz: "Достық д-лы, 85а" },
+      { name: "Кинопавильон",               address_kz: "Зенков к-сі, 24А" },
     ];
 
     for (const { name, address_kz } of updates) {
@@ -31,9 +32,10 @@ export class UpdateAlemLocationAddresses1784600000000 implements MigrationInterf
     const reverts: { name: string; address_kz: string }[] = [
       { name: "Конкордия",                  address_kz: "ул. Богенбай батыра 151" },
       { name: "Университет Туран",           address_kz: "ул. Каныша Сатпаева, 16а" },
-      { name: "Тотальный театр",             address_kz: "ул. Шевченко, 114" },
+      { name: "Тотальный театр",             address_kz: "Мысал к-сі, 1" },
       { name: "Almaty Central Standup Club", address_kz: "ул. Кабанбай батыра 71" },
       { name: "Dostyk Hall",                 address_kz: "пр. Достык, 85а" },
+      { name: "Кинопавильон",               address_kz: "ул. Зенкова, 24А" },
     ];
 
     for (const { name, address_kz } of reverts) {
