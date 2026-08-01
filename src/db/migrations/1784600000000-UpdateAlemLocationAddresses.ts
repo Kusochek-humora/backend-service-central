@@ -13,7 +13,7 @@ export class UpdateAlemLocationAddresses1784600000000 implements MigrationInterf
 
     for (const { name, address_kz } of updates) {
       await queryRunner.query(
-        `UPDATE "alem_locations" SET "address_kz" = $1 WHERE "name" = $2`,
+        `UPDATE "alem_locations" SET "address_kz" = $1 WHERE "label" = $2`,
         [address_kz, name]
       );
     }
@@ -24,7 +24,7 @@ export class UpdateAlemLocationAddresses1784600000000 implements MigrationInterf
       SET
         "address_ru" = 'Каирбекова, 35А, 3 этаж',
         "address_kz" = 'Қайырбекова к-сі, 35А, 3 қабат'
-      WHERE "name" = 'Punch Standup club'
+      WHERE "label" ='Punch Standup club'
     `);
   }
 
@@ -40,7 +40,7 @@ export class UpdateAlemLocationAddresses1784600000000 implements MigrationInterf
 
     for (const { name, address_kz } of reverts) {
       await queryRunner.query(
-        `UPDATE "alem_locations" SET "address_kz" = $1 WHERE "name" = $2`,
+        `UPDATE "alem_locations" SET "address_kz" = $1 WHERE "label" = $2`,
         [address_kz, name]
       );
     }
@@ -50,7 +50,7 @@ export class UpdateAlemLocationAddresses1784600000000 implements MigrationInterf
       SET
         "address_ru" = 'Каирбекова, 35A',
         "address_kz" = 'Каирбекова, 35A'
-      WHERE "name" = 'Punch Standup club'
+      WHERE "label" ='Punch Standup club'
     `);
   }
 }
