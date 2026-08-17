@@ -188,7 +188,16 @@ export async function uploadRoutes(app: FastifyInstance) {
           type: "object",
           properties: {
             folder: { type: "string" },
-            data: { type: "array", items: { type: "string" }, description: "Имена файлов. Полный путь: /uploads/{folder}/{filename}" },
+            data: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  filename: { type: "string" },
+                  createdAt: { type: "string" },
+                },
+              },
+            },
             total: { type: "number" },
             page: { type: "number" },
             limit: { type: "number" },
@@ -208,9 +217,19 @@ export async function uploadRoutes(app: FastifyInstance) {
     const { page = 1, limit = 50 } = request.query as { page?: number; limit?: number };
 
     const dir = path.join(UPLOAD_DIR, folder);
-    const allFiles = await fs.readdir(dir);
-    const total = allFiles.length;
-    const data = allFiles.slice((page - 1) * limit, page * limit);
+    const filenames = await fs.readdir(dir);
+
+    const withStats = await Promise.all(
+      filenames.map(async (filename) => {
+        const stat = await fs.stat(path.join(dir, filename));
+        return { filename, createdAt: stat.mtime.toISOString() };
+      })
+    );
+
+    withStats.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+    const total = withStats.length;
+    const data = withStats.slice((page - 1) * limit, page * limit);
 
     return { folder, data, total, page, limit, pages: Math.ceil(total / limit) };
   });
