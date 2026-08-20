@@ -75,6 +75,9 @@ export class AlemEvent {
   location?: AlemLocation;
 
   @Column({ nullable: true })
+  fileGroupId?: number;
+
+  @Column({ nullable: true })
   locationId?: number;
 
   @ManyToOne(() => AlemCategory, { nullable: true, eager: true, onDelete: "SET NULL" })

@@ -1,8 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { AppDataSource } from "../../db/data-source";
 import { AlemFileGroup } from "../../db/entities/alem-file-group.entity";
+import { AlemEvent } from "../../db/entities/alem-event.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
+import { cacheDelPattern } from "../../utils/cache";
 import fs from "fs/promises";
 import path from "path";
 
@@ -37,6 +39,7 @@ async function deleteFile(filePath: string) {
 
 export async function alemFileGroupsRoutes(app: FastifyInstance) {
   const repo = AppDataSource.getRepository(AlemFileGroup);
+  const eventRepo = AppDataSource.getRepository(AlemEvent);
 
   const jwtGuard = async (request: any, reply: any) => {
     try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
@@ -108,6 +111,20 @@ export async function alemFileGroupsRoutes(app: FastifyInstance) {
     if (!group) return reply.status(404).send({ message: "Not found" });
     repo.merge(group, request.body as Partial<AlemFileGroup>);
     await repo.save(group);
+
+    const linked = await eventRepo.findBy({ fileGroupId: group.id });
+    if (linked.length > 0) {
+      await eventRepo.save(
+        linked.map(e => ({
+          ...e,
+          photo: group.photo,
+          ...(group.banner !== undefined ? { banner: group.banner } : {}),
+          ...(group.photoStories !== undefined ? { photoStories: group.photoStories } : {}),
+        }))
+      );
+      await cacheDelPattern("alem:*");
+    }
+
     return group;
   });
 

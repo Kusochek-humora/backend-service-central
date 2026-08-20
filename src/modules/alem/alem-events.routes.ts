@@ -63,6 +63,7 @@ const eventSchema = {
     telegramMsgId: { type: ["string", "null"] },
     location: locationSchema,
     category: categorySchema,
+    fileGroupId: { type: ["number", "null"] },
     locationId: { type: ["number", "null"] },
     categoryId: { type: ["number", "null"] },
     createdAt: { type: "string" },
@@ -91,6 +92,7 @@ const eventBodyProperties = {
   publishToMainBlock: { type: "boolean" },
   publishToMainTelegram: { type: "boolean" },
   isOnMainPage: { type: "boolean" },
+  fileGroupId: { type: "number" },
   locationId: { type: ["number", "null"] },
   categoryId: { type: ["number", "null"] },
 };
