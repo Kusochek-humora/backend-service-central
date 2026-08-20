@@ -4,6 +4,7 @@ import { EventFileGroup } from "../../db/entities/event-file-group.entity";
 import { Event } from "../../db/entities/event.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
+import { cacheDelPattern } from "../../utils/cache";
 import fs from "fs/promises";
 import path from "path";
 
@@ -141,6 +142,7 @@ export async function eventFileGroupsRoutes(app: FastifyInstance) {
           ...(group.photoStories !== undefined ? { photoStories: group.photoStories } : {}),
         }))
       );
+      await cacheDelPattern("events:*");
     }
 
     return group;
