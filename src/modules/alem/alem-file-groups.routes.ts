@@ -128,37 +128,6 @@ export async function alemFileGroupsRoutes(app: FastifyInstance) {
     return group;
   });
 
-  // Синк всех ивентов по дате+времени группы
-  app.post("/admin/alem/file-groups/sync-all", {
-    schema: {
-      tags: ["Alem Admin"], summary: "Синкнуть фото всех групп во все ивенты по дате+времени", ...bearerAuth,
-      response: { 200: { type: "object", properties: { synced: { type: "number" } } } },
-    },
-    onRequest: [jwtGuard, requirePermission(Section.ALEM)],
-  }, async (_request, reply) => {
-    const groups = await repo.find();
-    let synced = 0;
-
-    for (const group of groups) {
-      const events = await eventRepo.findBy({ date: group.date, time: group.time });
-      if (events.length === 0) continue;
-
-      await eventRepo.save(
-        events.map(e => ({
-          ...e,
-          fileGroupId: group.id,
-          photo: group.photo,
-          ...(group.banner !== undefined ? { banner: group.banner } : {}),
-          ...(group.photoStories !== undefined ? { photoStories: group.photoStories } : {}),
-        }))
-      );
-      synced += events.length;
-    }
-
-    await cacheDelPattern("alem:*");
-    return reply.send({ synced });
-  });
-
   app.delete("/admin/alem/file-groups/:id", {
     schema: {
       tags: ["Alem Admin"], summary: "Удалить группу фото", ...bearerAuth,
