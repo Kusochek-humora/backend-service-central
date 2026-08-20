@@ -36,6 +36,7 @@ const eventSchema = {
     description: { type: ["string", "null"] },
     comedians: { type: ["string", "null"] },
     subtext: { type: ["string", "null"] },
+    fileGroupId: { type: ["number", "null"] },
     categoryId: { type: ["number", "null"] },
     category: {
       nullable: true,
@@ -72,6 +73,7 @@ const eventProperties = {
   comedians: { type: "string", description: "Участники (опционально)" },
   subtext: { type: "string", description: "Подпись (опционально)" },
   categoryId: { type: "number", description: "ID категории (опционально)" },
+  fileGroupId: { type: "number", description: "ID набора карт (опционально)" },
 };
 
 const bodySchema = {

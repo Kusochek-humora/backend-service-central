@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { AppDataSource } from "../../db/data-source";
 import { EventFileGroup } from "../../db/entities/event-file-group.entity";
+import { Event } from "../../db/entities/event.entity";
 import { requirePermission } from "../auth/permissions";
 import { Section } from "../../db/entities/user.entity";
 import fs from "fs/promises";
@@ -16,6 +17,7 @@ async function deleteFile(filePath: string) {
 
 export async function eventFileGroupsRoutes(app: FastifyInstance) {
   const repo = AppDataSource.getRepository(EventFileGroup);
+  const eventRepo = AppDataSource.getRepository(Event);
 
   const jwtGuard = async (request: any, reply: any) => {
     try { await request.jwtVerify(); } catch { reply.status(401).send({ message: "Unauthorized" }); }
@@ -127,6 +129,20 @@ export async function eventFileGroupsRoutes(app: FastifyInstance) {
     const body = request.body as Partial<EventFileGroup>;
     repo.merge(group, body);
     await repo.save(group);
+
+    // синкаем фото во все привязанные события
+    const linked = await eventRepo.findBy({ fileGroupId: group.id });
+    if (linked.length > 0) {
+      await eventRepo.save(
+        linked.map(e => ({
+          ...e,
+          photo: group.photo,
+          ...(group.banner !== undefined ? { banner: group.banner } : {}),
+          ...(group.photoStories !== undefined ? { photoStories: group.photoStories } : {}),
+        }))
+      );
+    }
+
     return group;
   });
 

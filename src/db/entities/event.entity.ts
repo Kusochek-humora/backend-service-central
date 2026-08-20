@@ -81,6 +81,9 @@ export class Event {
   telegramMsgId?: string;
 
   @Column({ nullable: true })
+  fileGroupId?: number;
+
+  @Column({ nullable: true })
   notion?: string;
 
   @Column({ nullable: true, type: "text" })
