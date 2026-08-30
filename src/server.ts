@@ -32,6 +32,7 @@ import { alemCategoriesRoutes } from "./modules/alem/alem-categories.routes";
 import { alemFileGroupsRoutes } from "./modules/alem/alem-file-groups.routes";
 import { alemEventsRoutes } from "./modules/alem/alem-events.routes";
 import { alemFeedbackRoutes } from "./modules/alem/alem-feedback.routes";
+import { alemPushRoutes } from "./modules/alem/alem-push.routes";
 import { menuCombosRoutes } from "./modules/menu/menu-combos.routes";
 import { menuDiscountsRoutes } from "./modules/menu/menu-discounts.routes";
 import cron from "node-cron";
@@ -131,6 +132,7 @@ const start = async () => {
     app.register(menuCombosRoutes);
     app.register(menuDiscountsRoutes);
     app.register(alemFeedbackRoutes);
+    app.register(alemPushRoutes);
     app.register(fastifyStatic, {
       root: path.join(process.cwd(), "uploads"),
       prefix: "/uploads/",
