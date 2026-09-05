@@ -10,7 +10,10 @@ export async function alemFeedbackRoutes(app: FastifyInstance) {
         type: "object",
         required: ["message"],
         properties: {
-          message: { type: "string", minLength: 1, maxLength: 1000 },
+          message:       { type: "string", minLength: 1, maxLength: 1000 },
+          name:          { type: "string", maxLength: 100 },
+          contactType:   { type: "string", enum: ["telegram", "whatsapp", "email"] },
+          contactValue:  { type: "string", maxLength: 200 },
         },
       },
       response: {
@@ -19,19 +22,37 @@ export async function alemFeedbackRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { message } = request.body as { message: string };
+    const { message, name, contactType, contactValue } = request.body as {
+      message: string;
+      name?: string;
+      contactType?: string;
+      contactValue?: string;
+    };
 
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_VACANCIES;
 
     if (!token || !chatId) return reply.status(200).send({ ok: true });
 
-    const text = `📩 <b>Обратная связь Alem</b>\n\n${message}`;
+    const contactLabel: Record<string, string> = {
+      telegram: "Telegram",
+      whatsapp: "WhatsApp",
+      email: "Email",
+    };
+
+    const lines = [
+      `📩 <b>Обратная связь Alem</b>`,
+      name ? `\n👤 <b>Имя:</b> ${name}` : "",
+      contactType && contactValue
+        ? `📬 <b>${contactLabel[contactType] ?? contactType}:</b> ${contactValue}`
+        : "",
+      `\n💬 ${message}`,
+    ].filter(Boolean).join("\n");
 
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+      body: JSON.stringify({ chat_id: chatId, text: lines, parse_mode: "HTML" }),
     }).catch(() => {});
 
     return { ok: true };
