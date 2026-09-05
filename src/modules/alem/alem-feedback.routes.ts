@@ -8,12 +8,12 @@ export async function alemFeedbackRoutes(app: FastifyInstance) {
       summary: "Обратная связь с alemfest",
       body: {
         type: "object",
-        required: ["message"],
+        required: ["message", "name", "contactType", "contactValue"],
         properties: {
           message:       { type: "string", minLength: 1, maxLength: 1000 },
-          name:          { type: "string", maxLength: 100 },
+          name:          { type: "string", minLength: 1, maxLength: 100 },
           contactType:   { type: "string", enum: ["telegram", "whatsapp", "email"] },
-          contactValue:  { type: "string", maxLength: 200 },
+          contactValue:  { type: "string", minLength: 1, maxLength: 200 },
         },
       },
       response: {
