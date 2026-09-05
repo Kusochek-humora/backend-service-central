@@ -49,11 +49,16 @@ export async function alemFeedbackRoutes(app: FastifyInstance) {
       `\n💬 ${message}`,
     ].filter(Boolean).join("\n");
 
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text: lines, parse_mode: "HTML" }),
-    }).catch(() => {});
+    }).catch((err) => { app.log.error({ err }, "Telegram fetch error"); return null; });
+
+    if (tgRes && !tgRes.ok) {
+      const body = await tgRes.json().catch(() => ({}));
+      app.log.error({ status: tgRes.status, body }, "Telegram API error");
+    }
 
     return { ok: true };
   });
