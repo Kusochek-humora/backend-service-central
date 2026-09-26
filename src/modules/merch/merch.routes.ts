@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import { In } from "typeorm";
 import { AppDataSource } from "../../db/data-source";
 import { MerchCategory, MerchItem, MerchOrder } from "../../db/entities/merch.entity";
 import { requirePermission } from "../auth/permissions";
@@ -42,16 +43,21 @@ const itemSchema = {
   },
 };
 
-const orderItemSchema = {
+const orderItemInputSchema = {
   type: "object",
-  required: ["name", "quantity", "price"],
+  required: ["itemId", "quantity"],
   properties: {
-    name: { type: "string" },
-    size: { type: "string" },
-    quantity: { type: "number" },
-    price: { type: "number" },
+    itemId: { type: "number" },
+    size: { type: "string", maxLength: 30 },
+    quantity: { type: "integer", minimum: 1, maximum: 20 },
   },
 };
+
+const PHONE_PATTERN = "^\\+?[0-9]{10,15}$";
+const SOCIAL_LINK_PATTERN =
+  "^(@[a-zA-Z0-9_.]{2,32}|https?:\\/\\/(www\\.)?(instagram\\.com|t\\.me|wa\\.me|whatsapp\\.com|vk\\.com|facebook\\.com|threads\\.net)\\/[a-zA-Z0-9_.\\/-]+)$";
+const MAX_ORDER_ITEMS = 20;
+const MAX_TOTAL_QUANTITY = 50;
 
 
 export async function merchRoutes(app: FastifyInstance) {
@@ -141,20 +147,19 @@ export async function merchRoutes(app: FastifyInstance) {
 
   // PUBLIC — оформить заказ
   app.post("/merch/order", {
-    config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
+    config: { rateLimit: { max: 3, timeWindow: "1 minute" } },
     schema: {
       tags: ["Merch Public"],
       summary: "Оформить заказ",
       body: {
         type: "object",
-        required: ["name", "phone", "items", "totalPrice"],
+        required: ["name", "phone", "items"],
         properties: {
-          name: { type: "string" },
-          phone: { type: "string" },
-          socialLink: { type: "string" },
-          comment: { type: "string" },
-          items: { type: "array", items: orderItemSchema, minItems: 1 },
-          totalPrice: { type: "number" },
+          name: { type: "string", minLength: 2, maxLength: 100 },
+          phone: { type: "string", pattern: PHONE_PATTERN },
+          socialLink: { type: "string", maxLength: 200, pattern: SOCIAL_LINK_PATTERN },
+          comment: { type: "string", maxLength: 500 },
+          items: { type: "array", items: orderItemInputSchema, minItems: 1, maxItems: MAX_ORDER_ITEMS },
         },
       },
       response: {
@@ -163,8 +168,41 @@ export async function merchRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const body = request.body as Partial<MerchOrder>;
-    const order = orderRepo.create(body);
+    const { name, phone, socialLink, comment, items } = request.body as {
+      name: string; phone: string; socialLink?: string; comment?: string;
+      items: { itemId: number; size?: string; quantity: number }[];
+    };
+
+    const totalQuantity = items.reduce((sum, i) => sum + i.quantity, 0);
+    if (totalQuantity > MAX_TOTAL_QUANTITY) {
+      return reply.status(400).send({ message: "Слишком большое количество товаров" });
+    }
+
+    const itemIds = [...new Set(items.map((i) => i.itemId))];
+    const merchItems = await itemRepo.findBy({ id: In(itemIds) });
+    const itemById = new Map(merchItems.map((i) => [i.id, i]));
+
+    const orderItems: { name: string; size?: string; quantity: number; price: number }[] = [];
+    let totalPrice = 0;
+
+    for (const line of items) {
+      const item = itemById.get(line.itemId);
+      if (!item || !item.isAvailable) {
+        return reply.status(400).send({ message: `Товар ${line.itemId} недоступен` });
+      }
+      if (item.sizes?.length && (!line.size || !item.sizes.includes(line.size))) {
+        return reply.status(400).send({ message: `Некорректный размер для товара "${item.name_ru}"` });
+      }
+
+      const unitPrice = item.discount
+        ? Math.round(Number(item.price) * (1 - item.discount / 100) * 100) / 100
+        : Number(item.price);
+
+      orderItems.push({ name: item.name_ru, size: line.size, quantity: line.quantity, price: unitPrice });
+      totalPrice += unitPrice * line.quantity;
+    }
+
+    const order = orderRepo.create({ name, phone, socialLink, comment, items: orderItems, totalPrice });
     await orderRepo.save(order);
     await notifyMerchOrder(order);
     return reply.status(201).send({ id: order.id, message: "Order placed" });
