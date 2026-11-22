@@ -61,7 +61,7 @@ export const quizSwaggerTags = [
 
 **Статусы:** \`idle → intro → round_intro → board → question_shown → timer_running → answer_revealed → board\` (или \`round_intro\` следующего раунда / \`finished\`). Статуса «табло» нет: очки видны всегда.
 
-**Команды** (\`POST /api/sessions/:id/commands\`, тело — схема \`QuizCommand\`): \`start\`, \`next_round\`, \`show_board\`, \`open_question {questionId}\`, \`start_timer\`, \`reveal_answer\`, \`set_active {participantId|null}\`, \`finish\`, \`back\` и команды механик. Недопустимая команда — \`409 INVALID_TRANSITION\`. Повторное открытие сыгранного вопроса — \`409 ALREADY_PLAYED\`.
+**Команды** (\`POST /api/sessions/:id/commands\`, тело — схема \`QuizCommand\`): \`start\`, \`next_round\`, \`show_board\`, \`goto_round {roundId}\` (в том числе к предыдущему раунду), \`open_question {questionId}\`, \`start_timer\`, \`reveal_answer\`, \`set_active {participantId|null}\`, \`finish\`, \`back\` и команды механик. Недопустимая команда — \`409 INVALID_TRANSITION\`. Повторное открытие сыгранного вопроса — \`409 ALREADY_PLAYED\`.
 
 **Версии.** Каждое изменение (команда, очки, правка игроков) увеличивает \`version\`. \`expectedVersion\` защищает от двойного клика и двух пультов (\`409 VERSION_MISMATCH\`, \`details.currentVersion\`). Команды одной сессии выполняются строго последовательно.
 

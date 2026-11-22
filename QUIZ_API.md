@@ -196,7 +196,7 @@ game { id, title, description, rounds[ { id, order, title, description, type, se
 | POST | `/api/sessions/:id/scores…` | очки (раздел 8) |
 | DELETE | `/api/sessions/:id` | admin |
 
-`screenUrl` = `<SCREEN_URL_BASE>/<sessionId>?token=<screenToken>`; если `SCREEN_URL_BASE` на бэке не задан, `screenUrl = null` — собирайте ссылку сами из `session.id` и `screenToken`.
+`screenUrl` = `<SCREEN_URL_BASE>/<sessionId>?token=<screenToken>`. По умолчанию база `https://kusochek-humora.github.io/Tiko-quiz-show/#/screen`, то есть `screenUrl` = `…/#/screen/<сессия>?token=<токен>`.
 
 ### Статусы
 
@@ -213,6 +213,7 @@ idle → intro → round_intro → board → question_shown → timer_running �
 |---|---|---|
 | `start` | — | idle → intro |
 | `next_round` | — | intro, board → round_intro. `409 NO_MORE_ROUNDS`, если раундов больше нет |
+| `goto_round` | `{roundId}` | intro, round_intro, board → round_intro выбранного раунда, **в том числе предыдущего**. Сыгранные вопросы остаются сыгранными, финалисты и вычёркнутые темы раунда сбрасываются; `next_round` дальше идёт от выбранного раунда |
 | `show_board` | — | round_intro, answer_revealed → board |
 | `open_question` | `{questionId}` | board → question_shown. Вопрос помечается сыгранным, повторно — `409 ALREADY_PLAYED`. Должен быть в текущем раунде |
 | `start_timer` | — | question_shown (фаза `play`) → timer_running. `409 NO_TIMER`, если нет лимита |
@@ -356,7 +357,7 @@ docker compose exec -e QUIZ_ADMIN_LOGIN=admin -e QUIZ_ADMIN_PASSWORD='<паро�
 | Переменная | Для чего |
 |---|---|
 | `ALLOWED_ORIGINS` | дополнительные домены для CORS через запятую (к уже разрешённым доменам сайта) |
-| `SCREEN_URL_BASE` | например `https://<user>.github.io/quiz-web/screen/#` → заполняется `screenUrl` |
+| `SCREEN_URL_BASE` | база для `screenUrl`; по умолчанию `https://kusochek-humora.github.io/Tiko-quiz-show/#/screen` |
 | `PUBLIC_UPLOADS_URL` | например `https://api.example.com/uploads` → `url` файлов становятся абсолютными |
 | `QUIZ_JWT_SECRET` | секрет токенов квиза; по умолчанию выводится из `JWT_SECRET` |
 

@@ -183,6 +183,21 @@ const nextRoundApply: Apply = (s, _p, c) => {
   });
 };
 
+/** Перейти к любому раунду игры, в том числе к предыдущему. Сыгранные вопросы остаются сыгранными. */
+const gotoRoundApply: Apply = (s, payload, c) => {
+  const parsed = z.object({ roundId: z.uuid() }).safeParse(payload);
+  if (!parsed.success) return zodFail(parsed.error);
+  const round = c.game.rounds.find((r) => r.id === parsed.data.roundId);
+  if (!round) return fail("VALIDATION_ERROR", "Раунд не найден в этой игре");
+  return ok({
+    ...s,
+    currentRoundId: round.id,
+    currentQuestionId: null,
+    timerEndsAt: null,
+    roundState: { finalists: null, eliminatedThemeIds: [] },
+  });
+};
+
 const showBoardApply: Apply = (s) => ok({ ...s, currentQuestionId: null, activeParticipantId: null, timerEndsAt: null });
 
 const openQuestionApply: Apply = (s, payload, c) => {
@@ -289,6 +304,7 @@ const eliminateThemeApply: Apply = (s, payload, c) => {
 export const TRANSITIONS: Record<string, Transition> = {
   start:            { from: ["idle"], to: "intro", apply: startApply },
   next_round:       { from: ["intro", "board"], to: "round_intro", apply: nextRoundApply },
+  goto_round:       { from: ["intro", "round_intro", "board"], to: "round_intro", apply: gotoRoundApply },
   show_board:       { from: ["round_intro", "answer_revealed"], to: "board", apply: showBoardApply },
   open_question:    { from: ["board"], to: "question_shown", apply: openQuestionApply },
   start_timer:      { from: ["question_shown"], to: "timer_running", apply: startTimerApply },

@@ -87,11 +87,13 @@ export const quizJwtSecret: string =
 export const QUIZ_TOKEN_TTL = "12h";
 
 /**
- * SCREEN_URL_BASE — адрес экрана эфира, например https://user.github.io/quiz-web/screen/#
- * screenUrl = <база>/<sessionId>?token=<screenToken>. Если переменная не задана, screenUrl = null.
+ * SCREEN_URL_BASE — адрес экрана эфира. screenUrl = <база>/<sessionId>?token=<screenToken>.
+ * По умолчанию экран на GitHub Pages: https://kusochek-humora.github.io/Tiko-quiz-show/#/screen
+ * (переопределяется переменной; пустая строка отключает: screenUrl = null).
  */
+const DEFAULT_SCREEN_URL_BASE = "https://kusochek-humora.github.io/Tiko-quiz-show/#/screen";
 export function buildScreenUrl(sessionId: string, token: string): string | null {
-  const base = (process.env.SCREEN_URL_BASE || "").replace(/\/+$/, "");
+  const base = (process.env.SCREEN_URL_BASE ?? DEFAULT_SCREEN_URL_BASE).replace(/\/+$/, "");
   return base ? `${base}/${sessionId}?token=${encodeURIComponent(token)}` : null;
 }
 

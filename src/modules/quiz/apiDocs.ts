@@ -95,6 +95,7 @@ export const snapshotSchema = {
 // payload команд (кроме тех, что без параметров)
 const PAYLOADS: Record<string, Record<string, any>> = {
   open_question: { type: "object", required: ["questionId"], properties: { questionId: uuid } },
+  goto_round: { type: "object", required: ["roundId"], properties: { roundId: uuid } },
   set_active: { type: "object", required: ["participantId"], properties: { participantId: nullable(uuid) } },
   select_finalists: { type: "object", required: ["participantIds"], properties: { participantIds: { type: "array", items: uuid } } },
   eliminate_theme: { type: "object", required: ["themeId"], properties: { themeId: uuid } },
@@ -107,6 +108,7 @@ const PAYLOADS: Record<string, Record<string, any>> = {
 const COMMANDS: { type: string; description: string }[] = [
   { type: "start", description: "idle → intro" },
   { type: "next_round", description: "intro, board → round_intro. 409 NO_MORE_ROUNDS, если раундов больше нет" },
+  { type: "goto_round", description: "intro, round_intro, board → round_intro выбранного раунда (в том числе предыдущего). Сыгранные вопросы остаются сыгранными; финалисты и вычёркнутые темы раунда сбрасываются. next_round после этого продолжает с выбранного раунда" },
   { type: "show_board", description: "round_intro, answer_revealed → board" },
   { type: "open_question", description: "board → question_shown. Вопрос помечается сыгранным; повторно — 409 ALREADY_PLAYED" },
   { type: "start_timer", description: "question_shown (фаза play) → timer_running. 409 NO_TIMER без лимита времени" },

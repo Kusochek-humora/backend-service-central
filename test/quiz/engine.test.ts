@@ -374,3 +374,34 @@ test("игроков может быть сколько угодно: 40 игр�
   assert.deepEqual(computeFinalists("leader", many), [many[39].id]);
   assert.equal(computeFinalists(10, many).length, 10);
 });
+
+test("goto_round: к предыдущему раунду, сыгранные вопросы остаются сыгранными, next_round идёт дальше от выбранного", () => {
+  let s = open(toBoard(), k.standard.id);
+  s = run(run(s, "reveal_answer"), "show_board");
+  s = run(run(s, "next_round"), "show_board"); // второй раунд
+  assert.equal(s.currentRoundId, rounds.r2.id);
+  s = run(s, "goto_round", { roundId: rounds.r1.id });
+  assert.equal(s.status, "round_intro");
+  assert.equal(s.currentRoundId, rounds.r1.id);
+  assert.equal(s.currentQuestionId, null);
+  assert.ok(s.played.includes(k.standard.id)); // ранее сыгранный вопрос остаётся сыгранным
+  s = run(s, "show_board");
+  assert.equal(err(s, "open_question", { questionId: k.standard.id })!.code, "ALREADY_PLAYED");
+  assert.equal(run(run(s, "next_round"), "show_board").currentRoundId, rounds.r2.id);
+});
+
+test("goto_round: допустима из intro, round_intro и board; из остальных статусов и с чужим раундом — ошибка", () => {
+  const intro = run(initialState(), "start");
+  assert.equal(run(intro, "goto_round", { roundId: rounds.r3.id }).currentRoundId, rounds.r3.id);
+  const board = toBoard();
+  assert.equal(run(run(board, "next_round"), "goto_round", { roundId: rounds.r1.id }).status, "round_intro");
+  assert.equal(err(open(board, k.standard.id), "goto_round", { roundId: rounds.r1.id })!.code, "INVALID_TRANSITION");
+  assert.equal(err(initialState(), "goto_round", { roundId: rounds.r1.id })!.code, "INVALID_TRANSITION");
+  assert.equal(err(board, "goto_round", { roundId: uid() })!.code, "VALIDATION_ERROR");
+  assert.equal(err(board, "goto_round", {})!.code, "VALIDATION_ERROR");
+  // сброс состояния финала при переходе
+  let f = run(toBoard(2), "select_finalists", { participantIds: [PLAYERS[0].id] });
+  assert.deepEqual(f.roundState.finalists, [PLAYERS[0].id]);
+  f = run(f, "goto_round", { roundId: rounds.r3.id });
+  assert.equal(f.roundState.finalists, null);
+});
