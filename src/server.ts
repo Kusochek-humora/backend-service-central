@@ -39,13 +39,16 @@ import cron from "node-cron";
 import { EventFileGroup } from "./db/entities/event-file-group.entity";
 import fs from "fs/promises";
 import rateLimit from "@fastify/rate-limit";
+import { quizPlugin } from "./modules/quiz";
+import { swaggerRefResolver } from "./modules/quiz/apiDocs";
+import { quizSwaggerTags } from "./modules/quiz/swaggerGuide";
 
-const app = fastify({ logger: true, bodyLimit: 10 * 1024 * 1024, connectionTimeout: 30000, requestTimeout: 30000 }); // 10MB
+const app = fastify({ logger: true, bodyLimit: 10 * 1024 * 1024, connectionTimeout: 30000, requestTimeout: 5 * 60 * 1000 }); // 10MB
 
 const start = async () => {
   try {
     await app.register(cors, {
-      origin: ["https://test-standup.ru", "https://kusochek-humora.github.io",  "https://public-website-central.vercel.app", "https://standupclub.kz", "https://www.standupclub.kz", "https://alemfest.kz", "https://www.alemfest.kz"],
+      origin: [...(process.env.ALLOWED_ORIGINS ?? "").split(",").map((o) => o.trim()).filter(Boolean), "http://localhost:5174", /* TODO: временно, фронт квиза в разработке; убрать */ "https://test-standup.ru", "https://kusochek-humora.github.io",  "https://public-website-central.vercel.app", "https://standupclub.kz", "https://www.standupclub.kz", "https://alemfest.kz", "https://www.alemfest.kz"],
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-type", "Authorization"],
     });
@@ -54,9 +57,10 @@ const start = async () => {
       global: false,
     });
 
-    await app.register(swagger, {
+    await app.register(swagger, { refResolver: swaggerRefResolver,
       openapi: {
         openapi: "3.0.0",
+        tags: quizSwaggerTags,
         info: {
           title: "Editorial API",
           description: "API для редакции сайта",
@@ -133,6 +137,7 @@ const start = async () => {
     app.register(menuDiscountsRoutes);
     app.register(alemFeedbackRoutes);
     app.register(alemPushRoutes);
+    app.register(quizPlugin); // квиз «Своя игра»: REST /api, WebSocket /ws
     app.register(fastifyStatic, {
       root: path.join(process.cwd(), "uploads"),
       prefix: "/uploads/",

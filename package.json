@@ -9,7 +9,9 @@
     "migration:run": "ts-node --project tsconfig.json ./node_modules/typeorm/cli.js migration:run -d src/db/data-source.ts",
     "migration:revert": "ts-node --project tsconfig.json ./node_modules/typeorm/cli.js migration:revert -d src/db/data-source.ts",
     "migration:run:prod": "node ./node_modules/typeorm/cli.js migration:run -d dist/db/data-source.js",
-    "seed:chief": "ts-node --project tsconfig.json src/db/seeds/create-chief-editor.ts"
+    "seed:chief": "ts-node --project tsconfig.json src/db/seeds/create-chief-editor.ts",
+    "seed:quiz": "ts-node --project tsconfig.json src/db/seeds/seed-quiz.ts",
+    "test:quiz": "node --import tsx --test \"test/quiz/**/*.test.ts\""
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
@@ -20,6 +22,7 @@
     "@fastify/static": "^9.1.3",
     "@fastify/swagger": "^9.7.0",
     "@fastify/swagger-ui": "^5.2.6",
+    "@fastify/websocket": "^11.3.7",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
@@ -30,7 +33,8 @@
     "resend": "^6.12.4",
     "sharp": "^0.34.5",
     "typeorm": "^1.0.0",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
